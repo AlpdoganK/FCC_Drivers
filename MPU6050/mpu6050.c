@@ -8,8 +8,8 @@
  */
 
 /*
- *	Last Edited: 
- *	Last Changes:
+ *	Last Edited: 23 May 2026
+ *	Last Changes: Implemented DMA reads
  */
 
 #include "MPU6050.h"
@@ -58,6 +58,47 @@ uint8_t MPU6050_Initialise( MPU6050 *dev, I2C_HandleTypeDef *i2cHandle, MPU6050_
 
 	return errNum;
 
+}
+
+uint8_t MPU6050_ProcessDMA(MPU6050 *dev){
+
+	if (!dev->dmaReady) return 0xFF; // No new data
+
+	uint8_t *d = dev->dmaBuf;
+
+    // Register map order: AX AY AZ TEMP GX GY GZ (each 2 bytes, big-endian)
+    int16_t axRaw = (int16_t)((d[0]  << 8) | d[1]);
+    int16_t ayRaw = (int16_t)((d[2]  << 8) | d[3]);
+    int16_t azRaw = (int16_t)((d[4]  << 8) | d[5]);
+    // d[6], d[7] = temperature (skip)
+    int16_t gxRaw = (int16_t)((d[8]  << 8) | d[9]);
+    int16_t gyRaw = (int16_t)((d[10] << 8) | d[11]);
+    int16_t gzRaw = (int16_t)((d[12] << 8) | d[13]);
+
+    float lsb_g, lsb_dps;
+
+    switch (dev->config.accel_fs) {
+        case MPU6050_ACCEL_FS_2G:  lsb_g = 16384.0f; break;
+        case MPU6050_ACCEL_FS_4G:  lsb_g =  8192.0f; break;
+        case MPU6050_ACCEL_FS_8G:  lsb_g =  4096.0f; break;
+        case MPU6050_ACCEL_FS_16G: lsb_g =  2048.0f; break;
+    }
+    switch (dev->config.gyro_fs) {
+        case MPU6050_GYRO_FS_250:  lsb_dps = 131.0f; break;
+        case MPU6050_GYRO_FS_500:  lsb_dps =  65.5f; break;
+        case MPU6050_GYRO_FS_1000: lsb_dps =  32.8f; break;
+        case MPU6050_GYRO_FS_2000: lsb_dps =  16.4f; break;
+    }
+
+    dev->acc_mps2[0] = (axRaw / lsb_g) * 9.80665f;
+    dev->acc_mps2[1] = (ayRaw / lsb_g) * 9.80665f;
+    dev->acc_mps2[2] = (azRaw / lsb_g) * 9.80665f;
+
+    dev->gyro[0] = gxRaw / lsb_dps;
+    dev->gyro[1] = gyRaw / lsb_dps;
+    dev->gyro[2] = gzRaw / lsb_dps;
+
+	return 0; // Success
 }
 
 HAL_StatusTypeDef MPU6050_ReadTemperature( MPU6050 *dev ){
@@ -127,10 +168,18 @@ HAL_StatusTypeDef MPU6050_ReadGyro( MPU6050 *dev ){
 	return status;
 }
 
+HAL_StatusTypeDef MPU6050_ReadGyroAccel_DMA(MPU6050 *dev){
+	if (HAL_I2C_GetState(dev->i2cHandle) != HAL_I2C_STATE_READY) {
+        return HAL_BUSY;
+    }
+
+	return HAL_I2C_Mem_Read_DMA( dev->i2cHandle, MPU6050_ADDR, MPU6050_ACCEL_XOUT_H, I2C_MEMADD_SIZE_8BIT, dev->dmaBuf, 14);
+}
+
 //	LOW-LEVEL FUNCTIONS
 
 HAL_StatusTypeDef MPU6050_ReadRegister( MPU6050 *dev, uint8_t reg, uint8_t *data){
-	// 1 BYTE 0x00 YAZ 2 KEZ 0xFF de olabilir
+	
 	return HAL_I2C_Mem_Read( dev->i2cHandle, MPU6050_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, HAL_MAX_DELAY);
 }
 

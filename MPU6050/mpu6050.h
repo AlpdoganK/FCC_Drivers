@@ -8,8 +8,8 @@
  */
 
 /*
- *	Last Edited: 
- *	Last Changes:
+ *	Last Edited: 23 May 2026
+ *	Last Changes: Implemented DMA reads
  */
 
 #ifndef MPU6050_I2C_DRIVER_H
@@ -149,17 +149,22 @@ typedef struct {
 	float gyro[3];		//Gyroscope data
 	float temp_C;		//Temperature data in celcius
 
+    // DMA buffer and flag for asynchronous data acquisition
+    uint8_t dmaBuf[14] __attribute__((aligned(4)));
+    volatile bool dmaReady;
 } MPU6050;
 
 //	INITIALISITION
 
 uint8_t MPU6050_Initialise( MPU6050 *dev, I2C_HandleTypeDef *i2cHandle, MPU6050_Config *config );
+uint8_t MPU6050_ProcessDMA(MPU6050 *dev);
 
 //	DATA ACQUSITION
 
 HAL_StatusTypeDef MPU6050_ReadTemperature( MPU6050 *dev );
 HAL_StatusTypeDef MPU6050_ReadAcceleration( MPU6050 *dev );
 HAL_StatusTypeDef MPU6050_ReadGyro( MPU6050 *dev );
+HAL_StatusTypeDef MPU6050_ReadGyroAccel_DMA(MPU6050 *dev);
 
 //	LOW-LEVEL FUNCTIONS
 
