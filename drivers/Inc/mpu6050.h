@@ -175,4 +175,4 @@ HAL_StatusTypeDef MPU6050_WriteRegister( MPU6050 *dev, uint8_t reg, uint8_t *dat
 
 
 
-#endif /* INC_MPU6050_H_ */
+#endif /* MPU6050_I2C_DRIVER_H */
