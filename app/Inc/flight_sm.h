@@ -1,0 +1,9 @@
+typedef enum {
+    FLIGHT_PAD  = 0,
+    FLIGHT_BOOST,
+    FLIGHT_COAST,
+    FLIGHT_MIN_ALTITUDE_REACHED,
+    FLIGHT_APOGEE,
+    FLIGHT_DESCENT,
+    FLIGHT_MAIN,
+} FlightSM;
