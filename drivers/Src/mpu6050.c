@@ -12,7 +12,7 @@
  *	Last Changes: Implemented DMA reads
  */
 
-#include "MPU6050.h"
+#include "mpu6050.h"
 
 uint8_t MPU6050_Initialise( MPU6050 *dev, I2C_HandleTypeDef *i2cHandle, MPU6050_Config *config ){
 

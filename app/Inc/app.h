@@ -6,7 +6,7 @@
 #include "e220.h"
 #include "baro_fusion.h"
 #include "filters.h"
-#include "apogee_detector.h"
+#include "flight_sm.h"
 
 // Public functions that main.c can see
 void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2, UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2, UART_HandleTypeDef *huart6);

@@ -139,11 +139,12 @@ HAL_StatusTypeDef BME280_ReadTemperature(BME280 *dev) {
  */
 HAL_StatusTypeDef BME280_ReadPressure(BME280 *dev) {
     // Temperature must be read first to get an updated dev->calib.t_fine variable
+    HAL_StatusTypeDef status;
     status = BME280_ReadTemperature(dev);
     if (status != HAL_OK) return status;
     
     uint8_t data[3];
-    HAL_StatusTypeDef status = BME280_ReadRegisters(dev, BME280_REG_PRESS_MSB, data, 3);
+    status = BME280_ReadRegisters(dev, BME280_REG_PRESS_MSB, data, 3);
     if (status != HAL_OK) return status;
     
     // Reconstruct 20-bit raw pressure data

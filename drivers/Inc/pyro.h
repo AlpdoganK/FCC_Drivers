@@ -2,6 +2,7 @@
 #define PYRO_H_
 
 #include "stm32f4xx_hal.h" // Match your MCU family
+#include <stdbool.h>
 
 #define PYRO_FIRE_DURATION_MS  1000  // Keep MOSFET on for 1 second
 

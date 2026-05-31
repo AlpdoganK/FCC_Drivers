@@ -18,12 +18,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include "app.h"
 
 /* USER CODE END Includes */
 
@@ -83,17 +86,20 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  MX_DMA_Init();
 
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
+  App_Init(&hi2c1, &hi2c2, &huart1, &huart2, &huart6);
 
   /* USER CODE END 2 */
 
@@ -101,9 +107,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    char ch = 'A';
-    HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-    HAL_Delay(1000);
+    App_Run();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -157,6 +161,16 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c->Instance == I2C1) {
+        App_MpuDmaNotify();
+        App_Baro1DmaNotify();
+    }
+    if (hi2c->Instance == I2C2) {
+        App_Baro2DmaNotify();
+    }
+}
 
 /* USER CODE END 4 */
 

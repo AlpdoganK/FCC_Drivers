@@ -4,11 +4,12 @@
  * Created: 26 May 2026
  */
 
-ifndef FILTERS_H
-define FILTERS_H
+#ifndef FILTERS_H
+#define FILTERS_H
 
-include <stdint.h>
-include <stdbool.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 // Low-Pass Filter (LPF) for BME280 altitude data
 
@@ -23,7 +24,7 @@ float LPF_Update(LowPassFilter_t *lpf, float input);
 
 // Simple Moving Average Filter (SMA) for BME280 altitude data
 
-define SMA_WINDOW_SIZE 10  // Number of samples to average
+#define SMA_WINDOW_SIZE 10  // Number of samples to average
 
 typedef struct {
     float buffer[SMA_WINDOW_SIZE];
@@ -46,4 +47,4 @@ typedef struct {
 void Complementary_Init(ComplementaryFilter_t *cf, float alpha, float dt, float initial_angle);
 float Complementary_Update(ComplementaryFilter_t *cf, float accel_angle, float gyro_rate);
 
-endif /* FILTERS_H */
+#endif /* FILTERS_H */

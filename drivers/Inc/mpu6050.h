@@ -16,6 +16,7 @@
 #define MPU6050_I2C_DRIVER_H
 
 #include "stm32f4xx_hal.h" //needed for I2C
+#include <stdbool.h>
 
 //	DEFINES
 
