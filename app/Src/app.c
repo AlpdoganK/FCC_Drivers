@@ -9,6 +9,7 @@
 static MPU6050 myMPU6050;
 static BME280 baro1;
 static BME280 baro2;
+static LoRa_E220 myLora;
 static SensorStats_t baro1_stats;
 static SensorStats_t baro2_stats;
 static BaroHealth_t  avionics_health;
@@ -20,6 +21,9 @@ static uint32_t imu_last_tick  = 0;
 static uint32_t baro_last_tick = 0;
 const uint32_t imu_interval  = 10; // 100 Hz
 const uint32_t baro_interval = 50; // 20 Hz
+
+static uint32_t lora_last_tick = 0;
+const uint32_t  lora_interval  = 200;
 
 // Local Telemetry Tracks
 float rocket_pitch    = 0.0f;
@@ -41,17 +45,19 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
         .dlpf     = MPU6050_DLPF_44HZ
     };
 
-    if (MPU6050_Initialise(&myMPU6050, hi2c1, &mpuConfig) != 0) {
-
-        while(1);
+    if (MPU6050_Initialise(&myMPU6050, hi2c2, &mpuConfig) != 0) {
     }
 
     // 2. Initialize Dual Independent BME280s across different I2C lines
     BME280_Config baroConfig = { .temp_osr = 1, .press_osr = 4, .hum_osr = 1, .filter = 3, .mode = 3 };
 
 
-    if (BME280_Initialise(&baro1, hi2c1, &baroConfig) != 0) while(1);
-    if (BME280_Initialise(&baro2, hi2c2, &baroConfig) != 0) while(1);
+    if (BME280_Initialise(&baro1, hi2c1, &baroConfig) != 0) {
+    }
+    if (BME280_Initialise(&baro2, hi2c2, &baroConfig) != 0) {
+    } 
+
+    LoRa_Init(&myLora, huart1, LORA_AUX_GPIO_Port, LORA_AUX_Pin);
 
     // 3. Setup Redundant Fault Latches & Running Statistics Matrices
     avionics_health.sensor1_healthy = 1;
@@ -66,13 +72,13 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
 
     imu_last_tick  = HAL_GetTick();
     baro_last_tick = HAL_GetTick();
+    lora_last_tick = HAL_GetTick();
 
     FlightSM_Init();
 }
 
 void App_Run(void) {
     uint32_t current_time = HAL_GetTick();
-
     Pyro_ProcessTimeouts();
 
     // ====================================================================
@@ -140,11 +146,48 @@ void App_Run(void) {
     // ax/ay/az/gy are now module-scope — always valid here
     FlightSM_Update(rocket_altitude, ax, ay, az, rocket_pitch, gy);
 
+    if (current_time - lora_last_tick >= lora_interval) {
+    lora_last_tick = current_time;
+
+    myLora.packet.timestamp    = current_time;
+    myLora.packet.flight_state = (uint8_t)FlightSM_GetState();
+    myLora.packet.ax           = ax;
+    myLora.packet.ay           = ay;
+    myLora.packet.az           = az;
+    myLora.packet.gy           = gy;
+    myLora.packet.pitch        = rocket_pitch;
+    myLora.packet.baro_alt_raw = (alt1 + alt2) * 0.5f; // simple pre-fusion peek
+    myLora.packet.baro_alt     = rocket_altitude;
+    myLora.packet.gps_lat      = 0.0f;                  // TODO: wire NEO-M8N parser
+    myLora.packet.gps_lon      = 0.0f;                  // TODO: wire NEO-M8N parser
+
+    uint8_t lorast = LoRa_TransmitTelemetry_Blocking(&myLora, 200);
+    if (lorast != 0) {  
+    } /*else {
+        HAL_GPIO_WritePin(PYRO2_GPIO_Port, PYRO2_Pin, GPIO_PIN_SET);
+        HAL_Delay(100);
+        HAL_GPIO_WritePin(PYRO2_GPIO_Port, PYRO2_Pin, GPIO_PIN_RESET);
+        HAL_Delay(100);
+    }*/
+}
+
 }
 
 // ====================================================================
 // PHASE 3: HARDWARE-SAFE INTERRUPT ROUTING INTERFACES
 // ====================================================================
+
+LoRa_E220* App_GetLora(void) {
+    HAL_GPIO_WritePin(PYRO1_GPIO_Port, PYRO1_Pin, GPIO_PIN_RESET);
+    HAL_Delay(1000);
+    return &myLora;
+}
+
+void App_LoraDmaNotify(void) {
+    if (HAL_UART_GetState(myLora.uartHandle) == HAL_UART_STATE_READY) {
+        myLora.tx_busy = 0; // Clear software lockout on DMA completion
+    }
+}
 
 void App_MpuDmaNotify(void) {
     if (HAL_I2C_GetState(myMPU6050.i2cHandle) == HAL_I2C_STATE_READY) {

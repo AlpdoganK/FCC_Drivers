@@ -113,3 +113,42 @@ void FlightSM_Update(float current_altitude, float ax, float ay, float az, float
             break;
     }
 }
+
+uint8_t FlightSM_GetState(void) {
+    switch (current_flight_state) {
+
+        case FLIGHT_PAD:
+            return 0;
+            break;
+
+        case FLIGHT_BOOST:
+            return 1;
+            break;
+
+        case FLIGHT_COAST:
+            return 2;
+            break;
+
+        case FLIGHT_MIN_ALTITUDE_REACHED:
+            return 3;
+            break;
+
+        case FLIGHT_APOGEE:
+            return 4;
+            break;
+
+        case FLIGHT_DESCENT:
+            return 5;
+            break;
+
+        case FLIGHT_MAIN:
+            return 6;
+            break;
+
+        case FLIGHT_LANDED:
+            // System down. Recovery beacons active.
+            return 7;
+            break;
+    }
+    return 0xFF; // Invalid state (should never happen)
+}

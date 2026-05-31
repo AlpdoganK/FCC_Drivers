@@ -32,6 +32,9 @@ void LoRa_Init(LoRa_E220 *lora, UART_HandleTypeDef *huart, GPIO_TypeDef *auxPort
 
     lora->packet.header = 0xAB; // Set header byte
     lora->packet.footer = 0x0A; // Set footer byte
+    lora->packet.Lora_ADDRH = 5; // Set address header high byte
+    lora->packet.Lora_ADDRL = 122; // Set address header low byte
+    lora->packet.Lora_CH = 31; // Set channel
 }
 
 uint8_t LoRa_TransmitTelemetry_NonBlocking(LoRa_E220 *lora) {
@@ -64,6 +67,31 @@ uint8_t LoRa_TransmitTelemetry_NonBlocking(LoRa_E220 *lora) {
     }
 
     return 0; // Success: Data handed over to DMA
+}
+
+uint8_t LoRa_TransmitTelemetry_Blocking(LoRa_E220 *lora, uint32_t timeout) {
+    // 1. Hardware Check: AUX pin must be HIGH before transmitting
+    if (HAL_GPIO_ReadPin(lora->auxPort, lora->auxPin) == GPIO_PIN_RESET) {
+        return 1; // Radio buffer busy
+    }
+
+    // 2. CRC Calculation (same region as DMA variant)
+    uint8_t *crc_start_ptr = ((uint8_t*)&lora->packet) + 4;
+    uint16_t crc_payload_len = sizeof(TelemetryPacket) - 7;
+    lora->packet.crc = CalculateCRC16(crc_start_ptr, crc_payload_len);
+
+    // 3. Blocking transmit — HAL internally polls until complete or timeout
+    HAL_StatusTypeDef status = HAL_UART_Transmit(
+        lora->uartHandle,
+        (uint8_t*)&lora->packet,
+        sizeof(TelemetryPacket),
+        timeout
+    );
+
+    if (status == HAL_TIMEOUT) return 3;
+    if (status != HAL_OK)      return 4;
+
+    return 0;
 }
 
 // 4. ISR Unlock Mechanism: Call this inside your main.c HAL_UART_TxCpltCallback

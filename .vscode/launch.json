@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug (OpenOCD)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "executable": "build/Debug/cube.elf",
+      "runToEntryPoint": "main",
+      "svdFile": "${workspaceFolder}/STM32F411.svd"
+    }
+  ]
+}

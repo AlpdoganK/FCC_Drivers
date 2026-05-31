@@ -36,5 +36,6 @@ extern FlightState_t current_flight_state;
 // Public function prototypes
 void FlightSM_Init(void);
 void FlightSM_Update(float current_altitude, float ax, float ay, float az, float pitch_deg, float pitch_rate_gy);
+uint8_t FlightSM_GetState(void);
 
 #endif /* FLIGHT_SM_H_ */

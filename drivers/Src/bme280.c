@@ -28,8 +28,12 @@ uint8_t BME280_Initialise(BME280 *dev, I2C_HandleTypeDef *i2cHandle, BME280_Conf
 	uint8_t errNum = 0;
 	HAL_StatusTypeDef status;
     
+    //status = BME280_ReadRegister(dev, BME280_REG_ID, &chip_id);
+    //if (chip_id != 0x60) return 0xFF; // Wrong device or I2C fault
+
     status = BME280_ReadRegister(dev, BME280_REG_ID, &chip_id);
-    if (chip_id != 0x60) return 0xFF; // Wrong device or I2C fault
+    if (status != HAL_OK) return 0xFD;  // I2C transaction failed
+    if (chip_id != 0x60) return 0xFE;
     
     // 2. Read Factory Calibration Parameters
     status = BME280_ReadCalibrationData(dev);

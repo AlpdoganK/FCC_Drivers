@@ -172,6 +172,10 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
     }
 }
 
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+    App_LoraDmaNotify();
+}
+
 /* USER CODE END 4 */
 
 /**
