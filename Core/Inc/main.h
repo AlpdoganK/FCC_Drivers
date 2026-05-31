@@ -57,6 +57,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define PYRO2_Pin GPIO_PIN_12
+#define PYRO2_GPIO_Port GPIOB
+#define PYRO1_Pin GPIO_PIN_13
+#define PYRO1_GPIO_Port GPIOB
+#define LORA_AUX_Pin GPIO_PIN_8
+#define LORA_AUX_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
