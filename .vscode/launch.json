@@ -6,11 +6,12 @@
       "type": "cortex-debug",
       "request": "launch",
       "servertype": "openocd",
+      "device": "STM32F411CE",
       "configFiles": [
         "interface/stlink.cfg",
         "target/stm32f4x.cfg"
       ],
-      "executable": "build/Debug/cube.elf",
+      "executable": "${workspaceFolder}/build/Debug/cube.elf",
       "runToEntryPoint": "main",
       "svdFile": "${workspaceFolder}/STM32F411.svd"
     }

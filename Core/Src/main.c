@@ -97,9 +97,8 @@ int main(void)
   MX_I2C2_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
-  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
-  App_Init(&hi2c1, &hi2c2, &huart1, &huart2, &huart6);
+  App_Init(&hi2c1, &hi2c2, &huart1, &huart2);
 
   /* USER CODE END 2 */
 

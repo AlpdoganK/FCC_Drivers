@@ -36,7 +36,7 @@ static float ax = 0.0f, ay = 0.0f, az = 0.0f;
 static float gy = 0.0f;
 
 void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
-              UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2, UART_HandleTypeDef *huart6) {
+              UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2) {
           
     // 1. Initialize MPU6050 on I2C Bus 1
     MPU6050_Config mpuConfig = {
@@ -45,7 +45,7 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
         .dlpf     = MPU6050_DLPF_44HZ
     };
 
-    if (MPU6050_Initialise(&myMPU6050, hi2c2, &mpuConfig) != 0) {
+    if (MPU6050_Initialise(&myMPU6050, hi2c1, &mpuConfig) != 0) {
     }
 
     // 2. Initialize Dual Independent BME280s across different I2C lines
@@ -53,7 +53,6 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
 
 
     if (BME280_Initialise(&baro1, hi2c1, &baroConfig) != 0) {
-    }
     if (BME280_Initialise(&baro2, hi2c2, &baroConfig) != 0) {
     } 
 
@@ -162,13 +161,9 @@ void App_Run(void) {
     myLora.packet.gps_lon      = 0.0f;                  // TODO: wire NEO-M8N parser
 
     uint8_t lorast = LoRa_TransmitTelemetry_Blocking(&myLora, 200);
-    if (lorast != 0) {  
-    } /*else {
-        HAL_GPIO_WritePin(PYRO2_GPIO_Port, PYRO2_Pin, GPIO_PIN_SET);
-        HAL_Delay(100);
-        HAL_GPIO_WritePin(PYRO2_GPIO_Port, PYRO2_Pin, GPIO_PIN_RESET);
-        HAL_Delay(100);
-    }*/
+    if (lorast != 0) { 
+    } else {
+    }
 }
 
 }
@@ -178,8 +173,6 @@ void App_Run(void) {
 // ====================================================================
 
 LoRa_E220* App_GetLora(void) {
-    HAL_GPIO_WritePin(PYRO1_GPIO_Port, PYRO1_Pin, GPIO_PIN_RESET);
-    HAL_Delay(1000);
     return &myLora;
 }
 
