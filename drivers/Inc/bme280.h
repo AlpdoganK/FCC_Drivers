@@ -123,22 +123,21 @@ typedef struct {
 	float pressure_hPa;          // Atmospheric pressure in hPa (hectopascals)
 	float humidity_pct;          // Relative humidity in %
 
-    // DMA buffer and flag for asynchronous data acquisition
-    uint8_t dmaBuf[8] __attribute__((aligned(4)));
-    volatile bool dmaReady;
+    volatile bool freshData;
 
 } BME280;
 
 //	INITIALISATION
 
 uint8_t BME280_Initialise( BME280 *dev, I2C_HandleTypeDef *i2cHandle, BME280_Config *config );
-uint8_t BME280_ProcessDMA(BME280 *dev);
+//uint8_t BME280_ProcessDMA(BME280 *dev);
 //	DATA ACQUISITION
 
 HAL_StatusTypeDef BME280_ReadTemperature( BME280 *dev );
 HAL_StatusTypeDef BME280_ReadPressure( BME280 *dev );
 HAL_StatusTypeDef BME280_ReadHumidity( BME280 *dev );
-HAL_StatusTypeDef BME280_ReadDMA( BME280 *dev );
+//HAL_StatusTypeDef BME280_ReadDMA( BME280 *dev );
+HAL_StatusTypeDef BME280_ReadAll(BME280 *dev);
 
 //	LOW-LEVEL FUNCTIONS
 

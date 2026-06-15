@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "dma.h"
 #include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
@@ -86,17 +85,16 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  MX_DMA_Init();
 
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
   App_Init(&hi2c1, &hi2c2, &huart1, &huart2);
 
@@ -161,19 +159,6 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c->Instance == I2C1) {
-        App_MpuDmaNotify();
-        App_Baro1DmaNotify();
-    }
-    if (hi2c->Instance == I2C2) {
-        App_Baro2DmaNotify();
-    }
-}
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-    App_LoraDmaNotify();
-}
 
 /* USER CODE END 4 */
 

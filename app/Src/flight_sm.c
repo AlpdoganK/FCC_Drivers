@@ -74,26 +74,23 @@ void FlightSM_Update(float current_altitude, float ax, float ay, float az, float
             if (apogee_tracker.descent_count >= DESCENT_CONFIRM) {
                 current_flight_state = FLIGHT_APOGEE;
             }
-            break;
 
         case FLIGHT_APOGEE:
-            Pyro_Arm();
-            Pyro_Fire(PYRO_CH1); // Fire drogue (non-blocking, one-shot by pyro driver)
+            Pyro1_Fire(); // Fire drogue (non-blocking, one-shot by pyro driver)
             current_flight_state = FLIGHT_DESCENT;
             break;
 
         case FLIGHT_DESCENT:
-            if (current_altitude < 150.0f) {
+            if (current_altitude < 800.0f) {
                 current_flight_state = FLIGHT_MAIN;
                 stability_timer = HAL_GetTick();
                 last_alt_sample = current_altitude;
             }
-            break;
 
         case FLIGHT_MAIN:
             // Fire main chute once on entry
             if (!main_chute_fired) {
-                Pyro_Fire(PYRO_CH2);
+                Pyro2_Fire();
                 main_chute_fired = true;
             }
 

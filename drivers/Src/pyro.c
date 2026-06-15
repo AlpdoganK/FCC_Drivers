@@ -1,11 +1,11 @@
 #include "pyro.h"
 
-volatile uint8_t pyro_armed = 0;
-
 // Internal track structures mapped to real hardware
-static PyroChannelState_t pyro_channels[2] = {
-    { .port = GPIOB, .pin = GPIO_PIN_12, .fire_start_time = 0, .is_firing = false }, // CH1
-    { .port = GPIOB, .pin = GPIO_PIN_13, .fire_start_time = 0, .is_firing = false }  // CH2
+static PyroChannelState_t pyro_channel1 = {
+    .port = GPIOB, .pin = GPIO_PIN_12, .fire_start_time = 0, .is_firing = false
+};
+static PyroChannelState_t pyro_channel2 = {
+    .port = GPIOB, .pin = GPIO_PIN_13, .fire_start_time = 0, .is_firing = false
 };
 
 void Pyro_Init(void)
@@ -18,37 +18,38 @@ void Pyro_Init(void)
     cfg.Speed = GPIO_SPEED_FREQ_LOW;
 
     /* Config CH1 */
-    cfg.Pin = pyro_channels[PYRO_CH1].pin;
-    HAL_GPIO_Init(pyro_channels[PYRO_CH1].port, &cfg);
-    HAL_GPIO_WritePin(pyro_channels[PYRO_CH1].port, pyro_channels[PYRO_CH1].pin, GPIO_PIN_RESET);
+    cfg.Pin = pyro_channel1.pin;
+    HAL_GPIO_Init(pyro_channel1.port, &cfg);
+    HAL_GPIO_WritePin(pyro_channel1.port, pyro_channel1.pin, GPIO_PIN_RESET);
 
     /* Config CH2 */
-    cfg.Pin = pyro_channels[PYRO_CH2].pin;
-    HAL_GPIO_Init(pyro_channels[PYRO_CH2].port, &cfg);
-    HAL_GPIO_WritePin(pyro_channels[PYRO_CH2].port, pyro_channels[PYRO_CH2].pin, GPIO_PIN_RESET);
-
-    pyro_armed = 0;
+    cfg.Pin = pyro_channel2.pin;
+    HAL_GPIO_Init(pyro_channel2.port, &cfg);
+    HAL_GPIO_WritePin(pyro_channel2.port, pyro_channel2.pin, GPIO_PIN_RESET);
 }
 
-void Pyro_Arm(void)    { pyro_armed = 1; }
-void Pyro_Disarm(void) { pyro_armed = 0; }
-
-PyroStatus Pyro_Fire(PyroChannel ch)
+void Pyro1_Fire(void)
 {
-    if (ch != PYRO_CH1 && ch != PYRO_CH2) return PYRO_ERR_INVALID_CH;
-    if (!pyro_armed) return PYRO_ERR_DISARMED;
-    
-    PyroChannelState_t *channel = &pyro_channels[ch];
-    
     // If it's already burning, don't re-trigger it
-    if (channel->is_firing) return PYRO_BUSY;
+    if (pyro_channel1.is_firing) return;
 
     // Fire non-blocking high-side trigger immediately
-    channel->is_firing = true;
-    channel->fire_start_time = HAL_GetTick();
-    HAL_GPIO_WritePin(channel->port, channel->pin, GPIO_PIN_SET);
+    pyro_channel1.is_firing = true;
+    pyro_channel1.fire_start_time = HAL_GetTick();
+    HAL_GPIO_WritePin(pyro_channel1.port, pyro_channel1.pin, GPIO_PIN_SET);
 
-    return PYRO_OK;
+}
+
+void Pyro2_Fire(void)
+{
+    // If it's already burning, don't re-trigger it
+    if (pyro_channel2.is_firing) return;
+
+    // Fire non-blocking high-side trigger immediately
+    pyro_channel2.is_firing = true;
+    pyro_channel2.fire_start_time = HAL_GetTick();
+    HAL_GPIO_WritePin(pyro_channel2.port, pyro_channel2.pin, GPIO_PIN_SET);
+
 }
 
 /**
@@ -59,14 +60,21 @@ void Pyro_ProcessTimeouts(void)
 {
     uint32_t now = HAL_GetTick();
 
-    for (int i = 0; i < 2; i++) {
-        if (pyro_channels[i].is_firing) {
-            // Check if the mandatory firing burn window has elapsed
-            if (now - pyro_channels[i].fire_start_time >= PYRO_FIRE_DURATION_MS) {
-                // Shut down current channel power flow instantly
-                HAL_GPIO_WritePin(pyro_channels[i].port, pyro_channels[i].pin, GPIO_PIN_RESET);
-                pyro_channels[i].is_firing = false;
-            }
+    if (pyro_channel1.is_firing) {
+        // Check if the mandatory firing burn window has elapsed
+        if (now - pyro_channel1.fire_start_time >= PYRO_FIRE_DURATION_MS) {
+            // Shut down current channel power flow instantly
+            HAL_GPIO_WritePin(pyro_channel1.port, pyro_channel1.pin, GPIO_PIN_RESET);
+            pyro_channel1.is_firing = false;
+        }
+    }
+    
+    if (pyro_channel2.is_firing) {
+        // Check if the mandatory firing burn window has elapsed
+        if (now - pyro_channel2.fire_start_time >= PYRO_FIRE_DURATION_MS) {
+            // Shut down current channel power flow instantly
+            HAL_GPIO_WritePin(pyro_channel2.port, pyro_channel2.pin, GPIO_PIN_RESET);
+            pyro_channel2.is_firing = false;
         }
     }
 }

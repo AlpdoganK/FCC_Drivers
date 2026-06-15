@@ -60,7 +60,7 @@ uint8_t BME280_Initialise(BME280 *dev, I2C_HandleTypeDef *i2cHandle, BME280_Conf
     return errNum;
 }
 
-uint8_t BME280_ProcessDMA(BME280 *dev) {
+/*uint8_t BME280_ProcessDMA(BME280 *dev) {
 
     if (!dev->dmaReady) return 0xFF;
 
@@ -109,7 +109,7 @@ uint8_t BME280_ProcessDMA(BME280 *dev) {
 
     dev->dmaReady = false; // Clear the flag until next DMA completion
     return 0; // Success
-}
+}*/
 
 /**
  * @brief  Reads raw data, calculates and updates temperature in °C
@@ -216,12 +216,60 @@ HAL_StatusTypeDef BME280_ReadHumidity(BME280 *dev) {
  * @param  dev: Pointer to the BME280 handle structure
  * @retval HAL Status
  */
-HAL_StatusTypeDef BME280_ReadDMA(BME280 *dev) {
+/*HAL_StatusTypeDef BME280_ReadDMA(BME280 *dev) {
     if (HAL_I2C_GetState(dev->i2cHandle) != HAL_I2C_STATE_READY) {
         return HAL_BUSY;
     }
     
     return HAL_I2C_Mem_Read_DMA(dev->i2cHandle, BME280_ADDR, BME280_REG_PRESS_MSB, I2C_MEMADD_SIZE_8BIT, dev->dmaBuf, 8);
+}*/
+
+HAL_StatusTypeDef BME280_ReadAll(BME280 *dev) {
+    uint8_t data[8];
+
+    HAL_StatusTypeDef status = BME280_ReadRegisters(dev, BME280_REG_PRESS_MSB, data, 8);
+    if (status != HAL_OK) return status;
+
+    int32_t adc_P = (int32_t)(((uint32_t)data[0] << 12) | ((uint32_t)data[1] << 4) | ((uint32_t)data[2] >> 4));
+    int32_t adc_T = (int32_t)(((uint32_t)data[3] << 12) | ((uint32_t)data[4] << 4) | ((uint32_t)data[5] >> 4));
+    int32_t adc_H = (int32_t)(((uint32_t)data[6] << 8)  |  (uint32_t)data[7]);
+
+    // Temperature
+    int32_t t1 = ((((adc_T >> 3) - ((int32_t)dev->calib.dig_T1 << 1))) * ((int32_t)dev->calib.dig_T2)) >> 11;
+    int32_t t2 = (((((adc_T >> 4) - ((int32_t)dev->calib.dig_T1)) * ((adc_T >> 4) - ((int32_t)dev->calib.dig_T1))) >> 12) * ((int32_t)dev->calib.dig_T3)) >> 14;
+    dev->calib.t_fine = t1 + t2;
+    dev->temp_C = (float)((dev->calib.t_fine * 5 + 128) >> 8) / 100.0f;
+
+    // Pressure
+    int64_t p1, p2, p;
+    p1 = ((int64_t)dev->calib.t_fine) - 128000;
+    p2 = p1 * p1 * (int64_t)dev->calib.dig_P6;
+    p2 = p2 + ((p1 * (int64_t)dev->calib.dig_P5) << 17);
+    p2 = p2 + (((int64_t)dev->calib.dig_P4) << 35);
+    p1 = ((p1 * p1 * (int64_t)dev->calib.dig_P3) >> 8) + ((p1 * (int64_t)dev->calib.dig_P2) << 12);
+    p1 = (((((int64_t)1) << 47) + p1)) * ((int64_t)dev->calib.dig_P1) >> 33;
+    if (p1 != 0) {
+        p = 1048576 - adc_P;
+        p = (((p << 31) - p2) * 3125) / p1;
+        p1 = (((int64_t)dev->calib.dig_P9) * (p >> 13) * (p >> 13)) >> 25;
+        p2 = (((int64_t)dev->calib.dig_P8) * p) >> 19;
+        p = ((p + p1 + p2) >> 8) + (((int64_t)dev->calib.dig_P7) << 4);
+        dev->pressure_hPa = (float)p / 25600.0f;
+    } else {
+        dev->pressure_hPa = 0.0f;
+    }
+
+    // Humidity
+    int32_t h = (dev->calib.t_fine - ((int32_t)76800));
+    h = (((((adc_H << 14) - (((int32_t)dev->calib.dig_H4) << 20) - (((int32_t)dev->calib.dig_H5) * h)) +
+           ((int32_t)16384)) >> 15) * (((((((h * ((int32_t)dev->calib.dig_H6)) >> 10) * (((h * ((int32_t)dev->calib.dig_H3)) >> 11) + ((int32_t)32768))) >> 10) + ((int32_t)2097152)) *
+           ((int32_t)dev->calib.dig_H2) + 8192) >> 14));
+    h = (h - (((((h >> 15) * (h >> 15)) >> 7) * ((int32_t)dev->calib.dig_H1)) >> 4));
+    h = (h < 0 ? 0 : h);
+    h = (h > 419430400 ? 419430400 : h);
+    dev->humidity_pct = (float)(h >> 12) / 1024.0f;
+
+    return HAL_OK;
 }
 
 //	LOW-LEVEL FUNCTIONS

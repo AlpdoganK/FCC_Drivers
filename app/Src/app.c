@@ -37,7 +37,10 @@ static float gy = 0.0f;
 
 void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
               UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2) {
-          
+    
+                
+    Pyro_Init();
+
     // 1. Initialize MPU6050 on I2C Bus 1
     MPU6050_Config mpuConfig = {
         .accel_fs = MPU6050_ACCEL_FS_16G,
@@ -53,6 +56,8 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
 
 
     if (BME280_Initialise(&baro1, hi2c1, &baroConfig) != 0) {
+        
+    }
     if (BME280_Initialise(&baro2, hi2c2, &baroConfig) != 0) {
     } 
 
@@ -86,24 +91,29 @@ void App_Run(void) {
 
     if (current_time - imu_last_tick >= imu_interval) {
         imu_last_tick = current_time;
-        MPU6050_ReadGyroAccel_DMA(&myMPU6050);
+        if (MPU6050_ReadAll(&myMPU6050) == HAL_OK) {
+            myMPU6050.freshData = true;
+        }
     }
 
     if (current_time - baro_last_tick >= baro_interval) {
         baro_last_tick = current_time;
 
-        if (avionics_health.sensor1_healthy) BME280_ReadDMA(&baro1);
-        if (avionics_health.sensor2_healthy) BME280_ReadDMA(&baro2);
+        if (avionics_health.sensor1_healthy && BME280_ReadAll(&baro1) == HAL_OK) {
+            baro1.freshData = true;
+        }
+
+        if (avionics_health.sensor2_healthy && BME280_ReadAll(&baro2) == HAL_OK) {
+            baro2.freshData = true;
+        }
     }
 
     // ====================================================================
     // PHASE 2: ASYNCHRONOUS BACKGROUND COMPLETION CHECKS
     // ====================================================================
 
-    if (myMPU6050.dmaReady) {
-        myMPU6050.dmaReady = false;
-
-        MPU6050_ProcessDMA(&myMPU6050);
+    if (myMPU6050.freshData) {
+        myMPU6050.freshData = false;
 
         // Update module-scope variables so FlightSM_Update always has fresh data
         ax = myMPU6050.acc_mps2[0]; // Nose Vector
@@ -111,7 +121,7 @@ void App_Run(void) {
         az = myMPU6050.acc_mps2[2]; // Yaw Axis Lateral
 
         float gx = myMPU6050.gyro[0]; // Roll Rate
-        gy        = myMPU6050.gyro[1]; // Pitch Rate
+        float gy = myMPU6050.gyro[1]; // Pitch Rate
 
         float accel_pitch = atan2f(-ax, sqrtf(ay * ay + az * az)) * RAD_TO_DEG;
         float accel_roll  = atan2f(ay, az) * RAD_TO_DEG;
@@ -124,16 +134,14 @@ void App_Run(void) {
     static float alt2 = 0.0f;
     bool process_fusion = false;
 
-    if (baro1.dmaReady) {
-        baro1.dmaReady = false;
-        BME280_ProcessDMA(&baro1);
+    if (baro1.freshData) {
+        baro1.freshData = false;
         alt1 = 44330.0f * (1.0f - powf((baro1.pressure_hPa / sea_level_pressure), 0.1902949f));
         process_fusion = true;
     }
 
-    if (baro2.dmaReady) {
-        baro2.dmaReady = false;
-        BME280_ProcessDMA(&baro2);
+    if (baro2.freshData) {
+        baro2.freshData = false;
         alt2 = 44330.0f * (1.0f - powf((baro2.pressure_hPa / sea_level_pressure), 0.1902949f));
         process_fusion = true;
     }
@@ -172,6 +180,7 @@ void App_Run(void) {
 // PHASE 3: HARDWARE-SAFE INTERRUPT ROUTING INTERFACES
 // ====================================================================
 
+/*
 LoRa_E220* App_GetLora(void) {
     return &myLora;
 }
@@ -199,3 +208,4 @@ void App_Baro2DmaNotify(void) {
         baro2.dmaReady = true;
     }
 }
+*/

@@ -63,10 +63,6 @@ void Error_Handler(void);
 #define PYRO1_GPIO_Port GPIOB
 #define LORA_AUX_Pin GPIO_PIN_8
 #define LORA_AUX_GPIO_Port GPIOA
-#define M1_Pin GPIO_PIN_11
-#define M1_GPIO_Port GPIOA
-#define M0_Pin GPIO_PIN_12
-#define M0_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
