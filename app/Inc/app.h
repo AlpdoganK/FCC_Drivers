@@ -9,6 +9,7 @@
 #include "flight_sm.h"
 #include "main.h"
 #include "pyro.h"
+#include "debug_uart.h"
 
 // Public functions that main.c can see
 void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2, UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2);

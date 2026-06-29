@@ -91,6 +91,18 @@ uint8_t LoRa_TransmitTelemetry_Blocking(LoRa_E220 *lora, uint32_t timeout) {
     if (status == HAL_TIMEOUT) return 3;
     if (status != HAL_OK)      return 4;
 
+    // 4. Confirm the module actually accepted the packet: AUX should pulse LOW
+    // within ~10 ms as the module loads its TX buffer.
+    uint32_t t = HAL_GetTick();
+    while (HAL_GPIO_ReadPin(lora->auxPort, lora->auxPin) == GPIO_PIN_SET) {
+        if (HAL_GetTick() - t > 50) return 5; // AUX never went LOW — module ignored data
+    }
+    // Wait for AUX to return HIGH (RF transmission finished)
+    t = HAL_GetTick();
+    while (HAL_GPIO_ReadPin(lora->auxPort, lora->auxPin) == GPIO_PIN_RESET) {
+        if (HAL_GetTick() - t > 3000) return 6; // AUX stuck LOW — module hung
+    }
+
     return 0;
 }
 

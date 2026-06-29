@@ -57,6 +57,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Buzzer_Pin GPIO_PIN_1
+#define Buzzer_GPIO_Port GPIOA
+#define M1_Pin GPIO_PIN_6
+#define M1_GPIO_Port GPIOA
+#define M0_Pin GPIO_PIN_7
+#define M0_GPIO_Port GPIOA
 #define PYRO2_Pin GPIO_PIN_12
 #define PYRO2_GPIO_Port GPIOB
 #define PYRO1_Pin GPIO_PIN_13
