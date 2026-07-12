@@ -49,6 +49,7 @@ static MPU6050 myMPU6050;
 static BME280 baro1;
 static BME280 baro2;
 static LoRa_E220 myLora;
+static NEO_M8N myGPS;
 static SensorStats_t baro1_stats;
 static SensorStats_t baro2_stats;
 static BaroHealth_t  avionics_health;
@@ -79,7 +80,7 @@ static float ax = 0.0f, ay = 0.0f, az = 0.0f;
 static float gy = 0.0f;
 
 void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
-              UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2) {
+              UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2, UART_HandleTypeDef *huart6) {
     
                 
     Pyro_Init();
@@ -147,6 +148,8 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     }
 
     LoRa_Init(&myLora, huart1, LORA_AUX_GPIO_Port, LORA_AUX_Pin);
+    NEO_M8N_Init(&myGPS, huart2); // 5 Hz fix rate, GGA-only NMEA output
+    // huart6 is unused for now — reserved for the RS232 test-algorithm link
 
     // 3. Setup Redundant Fault Latches & Running Statistics Matrices
     avionics_health.sensor1_healthy = 1;
@@ -170,6 +173,7 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
 void App_Run(void) {
     uint32_t current_time = HAL_GetTick();
     Pyro_ProcessTimeouts();
+    NEO_M8N_Process(&myGPS); // parse any GPS line buffered by the RX ISR since last loop
 
     // ====================================================================
     // PHASE 1: TIMED NON-BLOCKING TRIGGER REQUESTS
@@ -251,8 +255,8 @@ void App_Run(void) {
         myLora.packet.pitch        = rocket_pitch;
         myLora.packet.baro_alt_raw = (alt1 + alt2) * 0.5f; // simple pre-fusion peek
         myLora.packet.baro_alt     = rocket_altitude;
-        myLora.packet.gps_lat      = 0.0f;                  // TODO: wire NEO-M8N parser
-        myLora.packet.gps_lon      = 0.0f;                  // TODO: wire NEO-M8N parser
+        myLora.packet.gps_lat      = myGPS.latitude_deg;
+        myLora.packet.gps_lon      = myGPS.longitude_deg;
 
         lorast = LoRa_TransmitTelemetry_Blocking(&myLora, 200);
     }
@@ -271,6 +275,13 @@ void App_Run(void) {
 
     }
 
+}
+
+// Fires once per received byte on any UART with an active HAL_UART_Receive_IT
+// (currently just USART2 / GPS). Re-arming for the next byte is handled inside
+// NEO_M8N_RxCpltCallback itself.
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    NEO_M8N_RxCpltCallback(&myGPS, huart);
 }
 
 // ====================================================================

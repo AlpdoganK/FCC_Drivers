@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/alp/FCC_Drivers/build/Debug/cmake_install.cmake",
+		"/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

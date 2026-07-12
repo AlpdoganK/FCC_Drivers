@@ -1,0 +1,8 @@
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:17:13:UBX_Send	48	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:38:13:UBX_SetNmeaRate	32	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:46:13:UBX_SetRate	40	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:73:14:NmeaToDecimalDegrees	24	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:82:13:ParseGGA	112	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:131:6:NEO_M8N_Init	16	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:152:6:NEO_M8N_Process	112	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:163:6:NEO_M8N_RxCpltCallback	24	static

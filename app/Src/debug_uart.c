@@ -1,9 +1,11 @@
 #include "debug_uart.h"
-#include "usart.h"
 
-/* Overrides the weak _write() in syscalls.c — routes printf/puts to USART2 */
+/* Overrides the weak _write() in syscalls.c. Debug print is disabled for now:
+ * USART2 is dedicated to the NEO-M8N GPS link, so there's no free UART to
+ * route printf to until USART6's RS232 test link is implemented. DBG_PRINT
+ * call sites are left in place; this just drops the output. */
 int _write(int file, char *ptr, int len) {
     (void)file;
-    HAL_UART_Transmit(&huart2, (uint8_t *)ptr, (uint16_t)len, HAL_MAX_DELAY);
+    (void)ptr;
     return len;
 }

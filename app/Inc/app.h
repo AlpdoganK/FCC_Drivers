@@ -4,6 +4,7 @@
 #include "mpu6050.h"
 #include "bme280.h"
 #include "e220.h"
+#include "neo_m8n.h"
 #include "baro_fusion.h"
 #include "filters.h"
 #include "flight_sm.h"
@@ -12,7 +13,8 @@
 #include "debug_uart.h"
 
 // Public functions that main.c can see
-void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2, UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2);
+void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
+              UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2, UART_HandleTypeDef *huart6);
 void App_Run(void);
 //void App_MpuDmaNotify(void);
 //void App_Baro1DmaNotify(void);

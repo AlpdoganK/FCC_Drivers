@@ -1,0 +1,5 @@
+/home/alp/FCC_Drivers/Core/Src/usart.c:37:6:MX_USART1_UART_Init	8	static
+/home/alp/FCC_Drivers/Core/Src/usart.c:66:6:MX_USART2_UART_Init	8	static
+/home/alp/FCC_Drivers/Core/Src/usart.c:95:6:MX_USART6_UART_Init	8	static
+/home/alp/FCC_Drivers/Core/Src/usart.c:123:6:HAL_UART_MspInit	64	static
+/home/alp/FCC_Drivers/Core/Src/usart.c:284:6:HAL_UART_MspDeInit	16	static

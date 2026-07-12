@@ -1,0 +1,224 @@
+[
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/main.c.obj -c /home/alp/FCC_Drivers/Core/Src/main.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/main.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/main.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/gpio.c.obj -c /home/alp/FCC_Drivers/Core/Src/gpio.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/gpio.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/gpio.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/dma.c.obj -c /home/alp/FCC_Drivers/Core/Src/dma.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/dma.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/dma.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/i2c.c.obj -c /home/alp/FCC_Drivers/Core/Src/i2c.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/i2c.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/i2c.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/usart.c.obj -c /home/alp/FCC_Drivers/Core/Src/usart.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/usart.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/usart.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/stm32f4xx_it.c.obj -c /home/alp/FCC_Drivers/Core/Src/stm32f4xx_it.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/stm32f4xx_it.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/stm32f4xx_it.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/stm32f4xx_hal_msp.c.obj -c /home/alp/FCC_Drivers/Core/Src/stm32f4xx_hal_msp.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/stm32f4xx_hal_msp.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/stm32f4xx_hal_msp.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/sysmem.c.obj -c /home/alp/FCC_Drivers/Core/Src/sysmem.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/sysmem.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/sysmem.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/Core/Src/syscalls.c.obj -c /home/alp/FCC_Drivers/Core/Src/syscalls.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/syscalls.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/Core/Src/syscalls.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -x assembler-with-cpp -MMD -MP -g -o CMakeFiles/cube.dir/startup_stm32f411xe.s.obj -c /home/alp/FCC_Drivers/startup_stm32f411xe.s",
+  "file": "/home/alp/FCC_Drivers/startup_stm32f411xe.s",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/startup_stm32f411xe.s.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/app/Src/app.c.obj -c /home/alp/FCC_Drivers/app/Src/app.c",
+  "file": "/home/alp/FCC_Drivers/app/Src/app.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/app/Src/app.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/app/Src/debug_uart.c.obj -c /home/alp/FCC_Drivers/app/Src/debug_uart.c",
+  "file": "/home/alp/FCC_Drivers/app/Src/debug_uart.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/app/Src/debug_uart.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/app/Src/flight_sm.c.obj -c /home/alp/FCC_Drivers/app/Src/flight_sm.c",
+  "file": "/home/alp/FCC_Drivers/app/Src/flight_sm.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/app/Src/flight_sm.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/drivers/Src/bme280.c.obj -c /home/alp/FCC_Drivers/drivers/Src/bme280.c",
+  "file": "/home/alp/FCC_Drivers/drivers/Src/bme280.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/drivers/Src/bme280.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/drivers/Src/e220.c.obj -c /home/alp/FCC_Drivers/drivers/Src/e220.c",
+  "file": "/home/alp/FCC_Drivers/drivers/Src/e220.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/drivers/Src/e220.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/drivers/Src/mpu6050.c.obj -c /home/alp/FCC_Drivers/drivers/Src/mpu6050.c",
+  "file": "/home/alp/FCC_Drivers/drivers/Src/mpu6050.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/drivers/Src/mpu6050.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/drivers/Src/neo_m8n.c.obj -c /home/alp/FCC_Drivers/drivers/Src/neo_m8n.c",
+  "file": "/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/drivers/Src/neo_m8n.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/drivers/Src/pyro.c.obj -c /home/alp/FCC_Drivers/drivers/Src/pyro.c",
+  "file": "/home/alp/FCC_Drivers/drivers/Src/pyro.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/drivers/Src/pyro.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/middleware/Src/baro_fusion.c.obj -c /home/alp/FCC_Drivers/middleware/Src/baro_fusion.c",
+  "file": "/home/alp/FCC_Drivers/middleware/Src/baro_fusion.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/middleware/Src/baro_fusion.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/middleware/Src/filters.c.obj -c /home/alp/FCC_Drivers/middleware/Src/filters.c",
+  "file": "/home/alp/FCC_Drivers/middleware/Src/filters.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/middleware/Src/filters.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj -c /home/alp/FCC_Drivers/Core/Src/system_stm32f4xx.c",
+  "file": "/home/alp/FCC_Drivers/Core/Src/system_stm32f4xx.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c.obj -c /home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c",
+  "file": "/home/alp/FCC_Drivers/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c.obj"
+}
+]

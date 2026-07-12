@@ -1,0 +1,6 @@
+/home/alp/FCC_Drivers/middleware/Src/filters.c:11:6:LPF_Init	16	static
+/home/alp/FCC_Drivers/middleware/Src/filters.c:25:7:LPF_Update	24	static
+/home/alp/FCC_Drivers/middleware/Src/filters.c:44:6:SMA_Init	24	static
+/home/alp/FCC_Drivers/middleware/Src/filters.c:59:7:SMA_Update	16	static
+/home/alp/FCC_Drivers/middleware/Src/filters.c:82:6:Complementary_Init	24	static
+/home/alp/FCC_Drivers/middleware/Src/filters.c:95:7:Complementary_Update	24	static
