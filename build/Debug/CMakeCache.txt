@@ -223,7 +223,9 @@ CMAKE_STRIP:FILEPATH=/usr/bin/arm-none-eabi-strip
 //Path to a program.
 CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 
-//The CMake toolchain file
+//Path to a CMake toolchain file, read early in the CMake run,
+// that specifies the compilers, toolchain utilities, and target-platform
+// information used when cross-compiling.
 CMAKE_TOOLCHAIN_FILE:FILEPATH=/home/alp/FCC_Drivers/cmake/gcc-arm-none-eabi.cmake
 
 //If this value is on, makefiles will be generated without the

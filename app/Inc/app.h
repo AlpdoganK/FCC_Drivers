@@ -11,6 +11,7 @@
 #include "main.h"
 #include "pyro.h"
 #include "debug_uart.h"
+#include "rs232.h"
 
 // Public functions that main.c can see
 void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,

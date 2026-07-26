@@ -149,7 +149,8 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
 
     LoRa_Init(&myLora, huart1, LORA_AUX_GPIO_Port, LORA_AUX_Pin);
     NEO_M8N_Init(&myGPS, huart2); // 5 Hz fix rate, GGA-only NMEA output
-    // huart6 is unused for now — reserved for the RS232 test-algorithm link
+    (void)huart6; // UKB_RS232_Init() below talks to huart6 directly
+    UKB_RS232_Init();
 
     // 3. Setup Redundant Fault Latches & Running Statistics Matrices
     avionics_health.sensor1_healthy = 1;
@@ -174,6 +175,32 @@ void App_Run(void) {
     uint32_t current_time = HAL_GetTick();
     Pyro_ProcessTimeouts();
     NEO_M8N_Process(&myGPS); // parse any GPS line buffered by the RX ISR since last loop
+
+    // ====================================================================
+    // PHASE 0: RS232 GROUND-TEST COMMAND HANDLING (USART6)
+    // rs232.c only validates frames and raises flags from ISR context;
+    // all the actual test-mode behavior is decided here.
+    // ====================================================================
+    if (flag_sit_pending) {
+        flag_sit_pending = 0;
+        // TODO: arm 1 s SIT timer, start 10 Hz status TX per Tablo spec
+    }
+
+    if (flag_sut_pending) {
+        flag_sut_pending = 0;
+        // TODO: arm 1 s SUT timer, start 10 Hz status TX per Tablo spec
+    }
+
+    if (flag_stop_pending) {
+        flag_stop_pending = 0;
+        // TODO: tear down whatever SIT/SUT started, return to normal flight-computer operation
+    }
+
+    if (flag_sut_data_ready) {
+        flag_sut_data_ready = 0;
+        // TODO: feed ukb_sut_data[0..ukb_sut_data_len) (Tablo 4 synthetic
+        // sensor packet) into the algorithm under test instead of live sensors
+    }
 
     // ====================================================================
     // PHASE 1: TIMED NON-BLOCKING TRIGGER REQUESTS
