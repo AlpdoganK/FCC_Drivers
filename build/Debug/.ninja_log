@@ -76,3 +76,7 @@
 248	389	1785048516071910738	cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c.obj	8466fe29cf98ec97
 113	426	1785048515936909772	cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c.obj	c53a38d779368629
 426	519	1785048516249912012	cube.elf	bda25e602a0921b2
+11	173	1785062893042576693	CMakeFiles/cube.dir/app/Src/debug_uart.c.obj	44aa2197fd925625
+173	333	1785062893204578031	cube.elf	bda25e602a0921b2
+2	99	1785063013524062725	CMakeFiles/cube.dir/app/Src/app.c.obj	3f9a8c88e874d3da
+99	165	1785063013621234831	cube.elf	bda25e602a0921b2

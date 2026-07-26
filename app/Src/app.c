@@ -148,7 +148,9 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     }
 
     LoRa_Init(&myLora, huart1, LORA_AUX_GPIO_Port, LORA_AUX_Pin);
-    NEO_M8N_Init(&myGPS, huart2); // 5 Hz fix rate, GGA-only NMEA output
+    // GPS disabled: USART2 is repurposed as the debug console (see
+    // debug_uart.c) and not needed alongside GPS at the same time.
+    (void)huart2;
     (void)huart6; // UKB_RS232_Init() below talks to huart6 directly
     UKB_RS232_Init();
 
@@ -174,7 +176,7 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
 void App_Run(void) {
     uint32_t current_time = HAL_GetTick();
     Pyro_ProcessTimeouts();
-    NEO_M8N_Process(&myGPS); // parse any GPS line buffered by the RX ISR since last loop
+    // GPS disabled — see App_Init note; USART2 is the debug console now.
 
     // ====================================================================
     // PHASE 0: RS232 GROUND-TEST COMMAND HANDLING (USART6)
@@ -183,21 +185,25 @@ void App_Run(void) {
     // ====================================================================
     if (flag_sit_pending) {
         flag_sit_pending = 0;
+        DBG_PRINT("RS232: SIT command received\r\n");
         // TODO: arm 1 s SIT timer, start 10 Hz status TX per Tablo spec
     }
 
     if (flag_sut_pending) {
         flag_sut_pending = 0;
+        DBG_PRINT("RS232: SUT command received\r\n");
         // TODO: arm 1 s SUT timer, start 10 Hz status TX per Tablo spec
     }
 
     if (flag_stop_pending) {
         flag_stop_pending = 0;
+        DBG_PRINT("RS232: STOP command received\r\n");
         // TODO: tear down whatever SIT/SUT started, return to normal flight-computer operation
     }
 
     if (flag_sut_data_ready) {
         flag_sut_data_ready = 0;
+        DBG_PRINT("RS232: SUT data packet received (%u bytes)\r\n", ukb_sut_data_len);
         // TODO: feed ukb_sut_data[0..ukb_sut_data_len) (Tablo 4 synthetic
         // sensor packet) into the algorithm under test instead of live sensors
     }
@@ -290,8 +296,19 @@ void App_Run(void) {
 
     if (current_time - print_last_tick >= 1000) {
         print_last_tick = current_time;
-        DBG_PRINT("Baro1: Pressure=%.2f hPa  Altitude=%.1f m\r\n", baro1.pressure_hPa, alt1);
-        DBG_PRINT("Baro2: Pressure=%.2f hPa  Altitude=%.1f m\r\n", baro2.pressure_hPa, alt2);
+
+        static const char *rs232_mode_name[] = { "SIT", "SUT", "STOP" };
+        DBG_PRINT("RS232: mode=%s\r\n", rs232_mode_name[UKB_RS232_GetMode()]);
+
+        DBG_PRINT("IMU: ax=%.2f ay=%.2f az=%.2f gy=%.2f pitch=%.1f roll=%.1f\r\n",
+                  ax, ay, az, gy, rocket_pitch, rocket_roll);
+
+        DBG_PRINT("Baro1: %s Pressure=%.2f hPa  Altitude=%.1f m\r\n",
+                  avionics_health.sensor1_healthy ? "OK" : "FAULT", baro1.pressure_hPa, alt1);
+        DBG_PRINT("Baro2: %s Pressure=%.2f hPa  Altitude=%.1f m\r\n",
+                  avionics_health.sensor2_healthy ? "OK" : "FAULT", baro2.pressure_hPa, alt2);
+        DBG_PRINT("Baro fault_count=%d\r\n", avionics_health.fault_count);
+
         DBG_PRINT("Alt: %.1f m  State: %d  Pitch: %.1f deg\r\n",rocket_altitude, FlightSM_GetState(), rocket_pitch);
         if (lorast != 0) {
             // 1=AUX busy  3=UART timeout  4=UART err  5=no AUX pulse(baud mismatch?)  6=AUX stuck
