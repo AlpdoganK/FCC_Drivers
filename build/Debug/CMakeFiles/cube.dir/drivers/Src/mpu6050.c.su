@@ -1,8 +1,8 @@
 /home/alp/FCC_Drivers/drivers/Src/mpu6050.c:17:9:MPU6050_Initialise	32	static
-/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:105:19:MPU6050_ReadAll	56	static
-/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:144:19:MPU6050_ReadTemperature	24	static
-/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:157:19:MPU6050_ReadAcceleration	40	static
-/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:183:19:MPU6050_ReadGyro	40	static
-/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:221:19:MPU6050_ReadRegister	40	static
-/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:226:19:MPU6050_ReadRegisters	40	static
-/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:231:19:MPU6050_WriteRegister	40	static
+/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:143:19:MPU6050_ReadAll	56	static
+/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:182:19:MPU6050_ReadTemperature	24	static
+/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:195:19:MPU6050_ReadAcceleration	40	static
+/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:221:19:MPU6050_ReadGyro	40	static
+/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:259:19:MPU6050_ReadRegister	40	static
+/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:264:19:MPU6050_ReadRegisters	40	static
+/home/alp/FCC_Drivers/drivers/Src/mpu6050.c:269:19:MPU6050_WriteRegister	40	static

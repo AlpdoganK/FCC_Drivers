@@ -145,6 +145,14 @@ typedef struct {
 	float gyro[3];		//Gyroscope data
 	float temp_C;		//Temperature data in celcius
 
+	// Last values read back from PWR_MGMT_1/CONFIG/ACCEL_CONFIG/GYRO_CONFIG
+	// during init, for diagnosing a write that ACKed on the bus but didn't
+	// actually latch.
+	uint8_t pwr_mgmt_1_readback;
+	uint8_t dlpf_cfg_readback;
+	uint8_t accel_cfg_readback;
+	uint8_t gyro_cfg_readback;
+
     volatile bool freshData;
 } MPU6050;
 

@@ -32,9 +32,9 @@ void LoRa_Init(LoRa_E220 *lora, UART_HandleTypeDef *huart, GPIO_TypeDef *auxPort
 
     lora->packet.header = 0xAB; // Set header byte
     lora->packet.footer = 0x0A; // Set footer byte
-    lora->packet.Lora_ADDRH = 5; // Set address header high byte
-    lora->packet.Lora_ADDRL = 122; // Set address header low byte
-    lora->packet.Lora_CH = 31; // Set channel
+    lora->packet.Lora_ADDRH = 123; // Set address header high byte
+    lora->packet.Lora_ADDRL = 211; // Set address header low byte
+    lora->packet.Lora_CH = 43; // Set channel
 }
 
 uint8_t LoRa_TransmitTelemetry_NonBlocking(LoRa_E220 *lora) {
@@ -48,11 +48,13 @@ uint8_t LoRa_TransmitTelemetry_NonBlocking(LoRa_E220 *lora) {
         return 2; // STM32 DMA TX pipeline busy
     }
 
-    // 3. CRC Calculation: Fixed function naming mismatch
-    // Computes over everything between the header and the CRC field itself
-    uint8_t *crc_start_ptr = ((uint8_t*)&lora->packet) + 1; 
-    uint16_t crc_payload_len = sizeof(TelemetryPacket) - 4; // Total size minus header(1), crc(2), footer(1)
-    
+    // 3. CRC Calculation — must match LoRa_TransmitTelemetry_Blocking's byte
+    // range exactly, since a receiver validates against one wire convention:
+    // skip the LoRa module's own routing bytes (ADDRH/ADDRL/CH) and the
+    // sync header, and stop before the crc/footer fields.
+    uint8_t *crc_start_ptr = ((uint8_t*)&lora->packet) + 4;
+    uint16_t crc_payload_len = sizeof(TelemetryPacket) - 7;
+
     lora->packet.crc = CalculateCRC16(crc_start_ptr, crc_payload_len);
 
     // Set software lockout flag before triggering DMA transfer

@@ -74,6 +74,7 @@ void FlightSM_Update(float current_altitude, float ax, float ay, float az, float
             if (apogee_tracker.descent_count >= DESCENT_CONFIRM) {
                 current_flight_state = FLIGHT_APOGEE;
             }
+            break;
 
         case FLIGHT_APOGEE:
             Pyro1_Fire(); // Fire drogue (non-blocking, one-shot by pyro driver)
@@ -86,6 +87,7 @@ void FlightSM_Update(float current_altitude, float ax, float ay, float az, float
                 stability_timer = HAL_GetTick();
                 last_alt_sample = current_altitude;
             }
+            break;
 
         case FLIGHT_MAIN:
             // Fire main chute once on entry

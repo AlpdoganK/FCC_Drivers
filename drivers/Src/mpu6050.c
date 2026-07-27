@@ -16,19 +16,12 @@
 
 uint8_t MPU6050_Initialise( MPU6050 *dev, I2C_HandleTypeDef *i2cHandle, MPU6050_Config *config ){
 
-	//setting struct params
+	// Only i2cHandle is committed up front — MPU6050_Read/WriteRegister need it.
+	// dev->config (and the rest of dev's state) is committed only after every
+	// write below is confirmed to have actually landed on the chip, so a
+	// partially-failed init can't leave the read path silently trusting a
+	// config that was never applied to the sensor.
 	dev->i2cHandle = i2cHandle;
-	dev->config = *config;
-
-	dev->acc_mps2[0] = 0.0f;
-	dev->acc_mps2[1] = 0.0f;
-	dev->acc_mps2[2] = 0.0f;
-
-	dev->gyro[0] = 0.0f;
-	dev->gyro[1] = 0.0f;
-	dev->gyro[2] = 0.0f;
-
-	dev->temp_C = 0.0f;
 
 	uint8_t errNum = 0;
 	HAL_StatusTypeDef status;
@@ -45,17 +38,62 @@ uint8_t MPU6050_Initialise( MPU6050 *dev, I2C_HandleTypeDef *i2cHandle, MPU6050_
 	status = MPU6050_WriteRegister(dev, MPU6050_PWR_MGMT_1, &val);
 	if(status != HAL_OK) return 0xFF;
 
-	val = dev->config.dlpf;
+	// Give the chip time to come up out of sleep — its PLL/oscillator needs
+	// to settle before it reliably accepts further register writes, and
+	// writing CONFIG/GYRO_CONFIG/ACCEL_CONFIG immediately after clearing the
+	// SLEEP bit can silently fail to latch on some parts.
+	HAL_Delay(50);
+
+	// Confirm the SLEEP bit actually cleared — an ACKed write doesn't
+	// guarantee it latched, and if it didn't, that's the direct explanation
+	// for any CONFIG-family write failing next.
+	uint8_t pwrReadback;
+	status = MPU6050_ReadRegister(dev, MPU6050_PWR_MGMT_1, &pwrReadback);
+	dev->pwr_mgmt_1_readback = pwrReadback;
+	if (status != HAL_OK || pwrReadback != 0x00) return 0xFF;
+
+	val = config->dlpf;
 	status = MPU6050_WriteRegister(dev, MPU6050_CONFIG, &val);
 	if(status != HAL_OK) return 0xFF;
 
-	val = dev->config.gyro_fs;
+	val = config->gyro_fs;
 	status = MPU6050_WriteRegister(dev, MPU6050_GYRO_CONFIG, &val);
 	if(status != HAL_OK) return 0xFF;
 
-	val = dev->config.accel_fs;
+	val = config->accel_fs;
 	status = MPU6050_WriteRegister(dev, MPU6050_ACCEL_CONFIG, &val);
 	if(status != HAL_OK) return 0xFF;
+
+	// Read back every config register just written: a write can ACK on the
+	// bus but still not latch (bus glitch, clone chip quirks), and ReadAll
+	// trusts dev->config for its LSB/g and LSB/dps conversion — so a
+	// silently unapplied scale write would otherwise produce data that's
+	// off by a fixed factor without ever reporting an error.
+	uint8_t readback;
+	status = MPU6050_ReadRegister(dev, MPU6050_CONFIG, &readback);
+	dev->dlpf_cfg_readback = readback;
+	if (status != HAL_OK || readback != (uint8_t)config->dlpf) return 0xFF;
+
+	status = MPU6050_ReadRegister(dev, MPU6050_ACCEL_CONFIG, &readback);
+	dev->accel_cfg_readback = readback;
+	if (status != HAL_OK || readback != (uint8_t)config->accel_fs) return 0xFF;
+
+	status = MPU6050_ReadRegister(dev, MPU6050_GYRO_CONFIG, &readback);
+	dev->gyro_cfg_readback = readback;
+	if (status != HAL_OK || readback != (uint8_t)config->gyro_fs) return 0xFF;
+
+	// All writes confirmed applied — now safe to commit config and reset state.
+	dev->config = *config;
+
+	dev->acc_mps2[0] = 0.0f;
+	dev->acc_mps2[1] = 0.0f;
+	dev->acc_mps2[2] = 0.0f;
+
+	dev->gyro[0] = 0.0f;
+	dev->gyro[1] = 0.0f;
+	dev->gyro[2] = 0.0f;
+
+	dev->temp_C = 0.0f;
 
 	return errNum;
 

@@ -11,9 +11,9 @@
 
 // Telemetry Packet Structure (Packed to avoid padding bytes)
 typedef struct __attribute__((__packed__)) {
-    uint8_t  Lora_ADDRH;         // Header byte = 0xAB
-    uint8_t  Lora_ADDRL;         // Header byte = 0xAB
-    uint8_t  Lora_CH;         // Header byte = 0xAB
+    uint8_t  Lora_ADDRH;         // Header byte = 0x7B
+    uint8_t  Lora_ADDRL;         // Header byte = 0xD3
+    uint8_t  Lora_CH;         // Header byte = 0x2B
     uint8_t  header;         // Header byte = 0xAB
     uint32_t timestamp;      // Milliseconds since bootup
     uint8_t  flight_state;   // Finite State Machine State ID

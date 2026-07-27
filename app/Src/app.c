@@ -53,6 +53,7 @@ static NEO_M8N myGPS;
 static SensorStats_t baro1_stats;
 static SensorStats_t baro2_stats;
 static BaroHealth_t  avionics_health;
+static bool mpu_healthy = false;
 static ComplementaryFilter_t pitch_cf;
 static ComplementaryFilter_t roll_cf;
 
@@ -115,8 +116,14 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     if (mpu_err != 0) {
         DBG_PRINT("Failed to initialize MPU6050: err=0x%02X i2c_err=0x%08lX\r\n",
                   mpu_err, hi2c1->ErrorCode);
+        DBG_PRINT("  PWR_MGMT_1 readback=0x%02X (want 0x00)  CONFIG(DLPF) readback=0x%02X (want 0x%02X)  ACCEL_CONFIG readback=0x%02X (want 0x%02X)  GYRO_CONFIG readback=0x%02X (want 0x%02X)\r\n",
+                  myMPU6050.pwr_mgmt_1_readback,
+                  myMPU6050.dlpf_cfg_readback, (uint8_t)mpuConfig.dlpf,
+                  myMPU6050.accel_cfg_readback, (uint8_t)mpuConfig.accel_fs,
+                  myMPU6050.gyro_cfg_readback, (uint8_t)mpuConfig.gyro_fs);
         HAL_Delay(5000);
     } else {
+        mpu_healthy = true;
         DBG_PRINT("MPU6050 OK\r\n");
     }
 
@@ -155,9 +162,17 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     UKB_RS232_Init();
 
     // 3. Setup Redundant Fault Latches & Running Statistics Matrices
-    avionics_health.sensor1_healthy = 1;
-    avionics_health.sensor2_healthy = 1;
+    // A sensor that failed init never gets a chance to prove itself at
+    // runtime — latch it unhealthy immediately so it's excluded from
+    // fusion/health-checking from the first sample, instead of feeding
+    // Stats_Update a frozen zero until the runtime fault detector catches up.
+    avionics_health.sensor1_healthy = (b1_err == 0);
+    avionics_health.sensor2_healthy = (b2_err == 0);
     avionics_health.fault_count     = 0;
+    avionics_health.last_alt1       = 0.0f;
+    avionics_health.last_alt2       = 0.0f;
+    avionics_health.stuck_count1    = 0;
+    avionics_health.stuck_count2    = 0;
 
     baro1_stats.mean = 0.0f; baro1_stats.variance = 1.0f; baro1_stats.alpha = 0.05f; baro1_stats.mean_beta = 0.05f;
     baro2_stats.mean = 0.0f; baro2_stats.variance = 1.0f; baro2_stats.alpha = 0.05f; baro2_stats.mean_beta = 0.05f;
@@ -214,7 +229,7 @@ void App_Run(void) {
 
     if (current_time - imu_last_tick >= imu_interval) {
         imu_last_tick = current_time;
-        if (MPU6050_ReadAll(&myMPU6050) == HAL_OK) {
+        if (mpu_healthy && MPU6050_ReadAll(&myMPU6050) == HAL_OK) {
             myMPU6050.freshData = true;
         }
     }

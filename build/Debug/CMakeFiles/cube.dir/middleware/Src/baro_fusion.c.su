@@ -1,3 +1,4 @@
 /home/alp/FCC_Drivers/middleware/Src/baro_fusion.c:9:6:Stats_Update	24	static
 /home/alp/FCC_Drivers/middleware/Src/baro_fusion.c:23:7:Fuse_Weighted	32	static
-/home/alp/FCC_Drivers/middleware/Src/baro_fusion.c:31:7:Baro_FusedAltitude	40	static
+/home/alp/FCC_Drivers/middleware/Src/baro_fusion.c:38:14:Baro_EffectiveVariance	24	static
+/home/alp/FCC_Drivers/middleware/Src/baro_fusion.c:47:7:Baro_FusedAltitude	48	static
