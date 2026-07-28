@@ -1,3 +1,4 @@
-/home/alp/FCC_Drivers/app/Src/flight_sm.c:16:6:FlightSM_Init	4	static
-/home/alp/FCC_Drivers/app/Src/flight_sm.c:25:6:FlightSM_Update	48	static
-/home/alp/FCC_Drivers/app/Src/flight_sm.c:116:9:FlightSM_GetState	4	static
+/home/alp/FCC_Drivers/app/Src/flight_sm.c:19:6:FlightSM_Init	16	static
+/home/alp/FCC_Drivers/app/Src/flight_sm.c:33:6:FlightSM_Update	48	static
+/home/alp/FCC_Drivers/app/Src/flight_sm.c:154:10:FlightSM_GetStatusBits	16	static
+/home/alp/FCC_Drivers/app/Src/flight_sm.c:167:9:FlightSM_GetState	4	static

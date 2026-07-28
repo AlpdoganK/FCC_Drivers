@@ -274,16 +274,33 @@ HAL_StatusTypeDef BME280_ReadAll(BME280 *dev) {
 
 //	LOW-LEVEL FUNCTIONS
 
+/* NEVER pass HAL_MAX_DELAY here.
+ *
+ * I2C_WaitOnFlagUntilTimeout guards its entire timeout check with
+ * `if (Timeout != HAL_MAX_DELAY)`, so that value does not mean "a long wait" -
+ * it means "spin forever". A single sensor whose bus is stuck then hangs the
+ * whole superloop: no flight state machine, no pyro timeouts, no telemetry,
+ * no RS232. Twice on 2026-07-28 the flight computer was killed outright this
+ * way, once on I2C1 and once on I2C2, and both times the board looked like a
+ * dead serial link when the fault was a sensor bus.
+ *
+ * 10 ms is ~10x the worst case: the longest transfer here is an 8-byte burst
+ * read, about 0.9 ms at 100 kHz including the address phase. On timeout the
+ * HAL returns the peripheral to READY, so the next cycle simply tries again;
+ * callers already treat anything other than HAL_OK as "no fresh sample" and
+ * keep flying on the last good one. */
+#define BME280_I2C_TIMEOUT_MS 10u
+
 HAL_StatusTypeDef BME280_ReadRegister(BME280 *dev, uint8_t reg, uint8_t *data) {
-    return HAL_I2C_Mem_Read(dev->i2cHandle, BME280_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, HAL_MAX_DELAY);
+    return HAL_I2C_Mem_Read(dev->i2cHandle, BME280_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, BME280_I2C_TIMEOUT_MS);
 }
 
 HAL_StatusTypeDef BME280_ReadRegisters(BME280 *dev, uint8_t reg, uint8_t *data, uint8_t length) {
-    return HAL_I2C_Mem_Read(dev->i2cHandle, BME280_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, length, HAL_MAX_DELAY);
+    return HAL_I2C_Mem_Read(dev->i2cHandle, BME280_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, length, BME280_I2C_TIMEOUT_MS);
 }
 
 HAL_StatusTypeDef BME280_WriteRegister(BME280 *dev, uint8_t reg, uint8_t *data) {
-    return HAL_I2C_Mem_Write(dev->i2cHandle, BME280_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, HAL_MAX_DELAY);
+    return HAL_I2C_Mem_Write(dev->i2cHandle, BME280_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, BME280_I2C_TIMEOUT_MS);
 }
 
 // PRIVATE STATIC HELPER

@@ -256,17 +256,24 @@ HAL_StatusTypeDef MPU6050_ReadGyro( MPU6050 *dev ){
 
 //	LOW-LEVEL FUNCTIONS
 
+/* NEVER pass HAL_MAX_DELAY here - see the matching note in bme280.c.
+ * I2C_WaitOnFlagUntilTimeout skips its timeout check entirely for that value,
+ * so a stuck bus hangs the whole superloop instead of failing one read.
+ * 10 ms is ~7x the worst case (a 14-byte burst is about 1.5 ms at 100 kHz);
+ * MPU6050_ReadAll's callers already gate on HAL_OK. */
+#define MPU6050_I2C_TIMEOUT_MS 10u
+
 HAL_StatusTypeDef MPU6050_ReadRegister( MPU6050 *dev, uint8_t reg, uint8_t *data){
-	
-	return HAL_I2C_Mem_Read( dev->i2cHandle, MPU6050_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, HAL_MAX_DELAY);
+
+	return HAL_I2C_Mem_Read( dev->i2cHandle, MPU6050_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, MPU6050_I2C_TIMEOUT_MS);
 }
 
 HAL_StatusTypeDef MPU6050_ReadRegisters( MPU6050 *dev, uint8_t reg, uint8_t *data, uint8_t length){
 
-	return HAL_I2C_Mem_Read( dev->i2cHandle, MPU6050_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, length, HAL_MAX_DELAY);
+	return HAL_I2C_Mem_Read( dev->i2cHandle, MPU6050_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, length, MPU6050_I2C_TIMEOUT_MS);
 }
 
 HAL_StatusTypeDef MPU6050_WriteRegister( MPU6050 *dev, uint8_t reg, uint8_t *data){
 
-	return HAL_I2C_Mem_Write( dev->i2cHandle, MPU6050_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, HAL_MAX_DELAY);
+	return HAL_I2C_Mem_Write( dev->i2cHandle, MPU6050_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 1, MPU6050_I2C_TIMEOUT_MS);
 }

@@ -3,7 +3,7 @@
 /home/alp/FCC_Drivers/drivers/Src/bme280.c:144:19:BME280_ReadPressure	344	static
 /home/alp/FCC_Drivers/drivers/Src/bme280.c:187:19:BME280_ReadHumidity	32	static
 /home/alp/FCC_Drivers/drivers/Src/bme280.c:227:19:BME280_ReadAll	368	static
-/home/alp/FCC_Drivers/drivers/Src/bme280.c:277:19:BME280_ReadRegister	40	static
-/home/alp/FCC_Drivers/drivers/Src/bme280.c:281:19:BME280_ReadRegisters	40	static
-/home/alp/FCC_Drivers/drivers/Src/bme280.c:285:19:BME280_WriteRegister	40	static
-/home/alp/FCC_Drivers/drivers/Src/bme280.c:296:26:BME280_ReadCalibrationData	56	static
+/home/alp/FCC_Drivers/drivers/Src/bme280.c:294:19:BME280_ReadRegister	40	static
+/home/alp/FCC_Drivers/drivers/Src/bme280.c:298:19:BME280_ReadRegisters	40	static
+/home/alp/FCC_Drivers/drivers/Src/bme280.c:302:19:BME280_WriteRegister	40	static
+/home/alp/FCC_Drivers/drivers/Src/bme280.c:313:26:BME280_ReadCalibrationData	56	static

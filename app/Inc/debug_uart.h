@@ -13,7 +13,7 @@
  * Set to 1 for bring-up / wiring diagnosis (I2C bus scan, sensor init errors,
  * baro calibration result), and expect the RS232 TX rate to drop while it is
  * on. Has no effect in Release builds, where DEBUG is not defined at all. */
-#define DEBUG_PRINTS_ENABLED 1
+#define DEBUG_PRINTS_ENABLED 0
 
 #if defined(DEBUG) && DEBUG_PRINTS_ENABLED
 #define DBG_PRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)

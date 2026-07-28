@@ -6,6 +6,8 @@
 #define RS232_H_
 
 #include "stm32f4xx_hal.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 /* UKB ground-test mode, mirrors the last validated RS232 command.
  * Test_Stop doubles as the idle / normal-flight-computer state. */
@@ -56,9 +58,26 @@ extern volatile uint8_t flag_sut_data_ready; // new 0xAB synthetic data packet b
 extern volatile uint8_t  ukb_sut_data[UKB_SUT_DATA_LEN];
 extern volatile uint16_t ukb_sut_data_len;
 
+/* Inbound SUT packet tallies, for diagnosing a test that is not progressing.
+ * The ground software shows its own RX/TX/checksum counters (EK-15 4.5); these
+ * are the same counts from our side of the cable. */
+extern volatile uint32_t ukb_sut_rx_count;
+extern volatile uint32_t ukb_sut_cks_errors;
+
 void UKB_RS232_Init(void);
 Test_Status UKB_RS232_GetMode(void);
 uint8_t UKB_Checksum(const uint8_t *buf, uint16_t n);
+
+/* Unpack a 36-byte Tablo 4 synthetic sensor packet into 's'.
+ * 'pkt' must be UKB_SENSOR_PACKET_LEN bytes starting at the 0xAB header.
+ * Returns false if the header is wrong. Framing, footers and checksum have
+ * already been checked by the receive path before flag_sut_data_ready is set.
+ *
+ * The FLOAT32s are unpacked MSB-first, matching how we transmit them - see
+ * UKB_FLOAT_BIG_ENDIAN in rs232.c. Getting this backwards is invisible while
+ * the test device is sending zeros and produces garbage the instant it sends
+ * a real flight profile. */
+bool UKB_ParseSensorPacket(const uint8_t *pkt, UKB_SensorSample *s);
 
 /* Build and blocking-transmit one Tablo 3 sensor packet on USART6.
  * ~3.1 ms on the wire at 115200 8N1. Returns the HAL_UART_Transmit status. */

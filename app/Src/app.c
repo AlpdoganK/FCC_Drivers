@@ -88,6 +88,83 @@ static uint32_t sit_arm_tick   = 0;
 static uint32_t sit_last_tick  = 0;
 static uint8_t  sitst          = 0;
 
+// SUT (Sentetik Ucus Testi) scheduling. Spec 2.1.4c: same one-second arming
+// delay as SIT. From then on the test device streams Tablo 4 synthetic sensor
+// packets to us, and we stream the Tablo 6 status packet back at 10 Hz
+// (2.1.4f) until STOP.
+const uint32_t sut_arm_delay   = 1000; // 1 s between command and going live
+const uint32_t sut_tx_interval = 100;  // 10 Hz status packets
+// Tablo 7 "Test Timeout": if the test device goes quiet for this long mid-test
+// the session is considered to have broken down. We keep the status stream up
+// (so the ground software still sees a live link) but stop advancing the
+// algorithm, rather than letting it coast on a stale sample.
+const uint32_t sut_data_timeout = 1000;
+static bool     sut_arming        = false;
+static bool     sut_active        = false;
+static uint32_t sut_arm_tick      = 0;
+static uint32_t sut_last_tx_tick  = 0;
+static uint32_t sut_last_data_tick = 0;
+static bool     sut_data_stale    = false;
+static uint32_t sut_sample_count  = 0;
+static uint8_t  sutst             = 0;
+// Last synthetic sample, kept for the debug console. The values that drive the
+// algorithm are pushed straight into the shared ax/ay/az/rocket_* variables so
+// that everything downstream is indifferent to where the data came from.
+static float    sut_pressure_mbar = 0.0f;
+// Latched peaks of the RAW inbound data, for reading over SWD after a run.
+// These are what settle the units question: a profile whose peak acceleration
+// magnitude is ~10 is in g, one peaking near ~100 is in m/s^2.
+static float    sut_max_acc_raw   = 0.0f;
+static float    sut_max_alt_seen  = 0.0f;
+// The three components at the instant of peak magnitude, and the very first
+// sample of the run. Together these say which axis the test device puts the
+// longitudinal (thrust/drag) acceleration on and with what sign - which the
+// magnitude alone cannot, and which EK-7 section 1.2 gets wrong.
+static float    sut_peak_ax = 0.0f, sut_peak_ay = 0.0f, sut_peak_az = 0.0f;
+static float    sut_first_ax = 0.0f, sut_first_ay = 0.0f, sut_first_az = 0.0f;
+
+// ---- Inbound SUT acceleration units ---------------------------------------
+// The units ARE m/s^2, exactly as EK-7's Tablo 2/4 say. Leave this at 0.
+//
+// Kept, with its history, because the wrong answer here is seductive. A single
+// packet was decoded mid-flight showing an acceleration magnitude of 1.10, and
+// that was read as "1 g expressed in g units". It was not: it was ~0.11 g in
+// m/s^2, from a packet just after apogee, where a real rocket in ballistic
+// descent genuinely is near-weightless. That is the exact condition
+// flight_sm.c's own "kinematic weightlessness" apogee vote exists to detect.
+//
+// A full profile logged over SWD settles it: peak magnitude 221 m/s^2 (22.6 g,
+// a sensible boost - 221 g would not be), and along the whole coast the Z
+// component decays 18.4 -> 3.9 -> 0.6 m/s^2 as drag falls with airspeed, then
+// builds again through the descent. That is a physically coherent flight in
+// m/s^2 and nothing else.
+//
+// Moral: never infer units from one sample taken at an unknown flight phase.
+#define UKB_SUT_ACCEL_IN_G 0
+#define UKB_G_TO_MS2       9.80665f
+
+// Map the test device's Z axis onto our longitudinal axis during SUT.
+// See the block comment at the remap itself for the measured evidence.
+#define UKB_SUT_SWAP_XZ 1
+
+// "SUT owns the sensor data" - true from the moment the command is validated,
+// not from when the 1 s arming window expires.
+//
+// The test device starts streaming immediately, so gating data intake on
+// sut_active alone silently dropped the opening ~11 samples of every run.
+// Measured against the real ground software: rx climbed by 12 accepted packets
+// while sut_sample_count was still 0, and the first sample we actually
+// processed was already at 113.9 m - a rocket at 221 m/s^2 covers ~110 m in
+// that first second. We were joining the flight after liftoff. Here thrust
+// outlasted the window so the boost was still detected, but on a short burn
+// the liftoff event would be missed outright.
+//
+// EK-7 2.1.4c only says SUT mode "becomes active" one second after the
+// command; it does not require throwing away data that has already arrived.
+// The 1 s delay is still honoured for the outbound status stream, which is
+// the part the ground software actually observes.
+#define SUT_ENGAGED (sut_active || sut_arming)
+
 // ---- RS232 idle heartbeat --------------------------------------------------
 // Sent once a second while no test is streaming, so the ground station shows a
 // live RX rate instead of a dead link. Suppressed during SİT — that traffic
@@ -120,7 +197,29 @@ static uint8_t  sitst          = 0;
 // framing errors). An unterminated PA reflects its output and radiates from
 // the module and traces instead of the antenna. Never key this module without
 // an antenna fitted - it is both an EMC problem and a way to damage the PA.
-#define LORA_TX_ENABLED 0
+#define LORA_TX_ENABLED 1
+
+// ---- I2C1 master switch (BENCH) -------------------------------------------
+// I2C1 (PB6 SCL / PB7 SDA) carries the MPU6050 and BME280 #1. Set to 0 to skip
+// that bus entirely: no bus recovery, no address scan, no sensor init, no
+// runtime reads. BME280 #2 on I2C2 is untouched and still drives altitude.
+//
+// Why this exists: on the perf board the I2C1 pull-ups sit at 0 V - both SCL
+// and SDA measured LOW with the peripheral idle, I2C1 CR1 stuck with START
+// set, SR1 SB never setting, SR2 BUSY. Every blocking call in bme280.c and
+// mpu6050.c passes HAL_MAX_DELAY, and I2C_WaitOnFlagUntilTimeout explicitly
+// skips its timeout check for that value, so the first read never returns.
+// That hangs App_Init before UKB_RS232_Init() ever runs - the board looks
+// completely dead on RS232 when the actual fault is two sensor wires.
+//
+// Note the failure mode is not stable: an ABSENT device NACKs and fails fast,
+// while a bus held LOW hangs forever. The same broken bus can therefore boot
+// fine one day and hang the next, which is what happened here.
+//
+// SET BACK TO 1 FOR ANY BOARD WITH A WORKING I2C1: with this at 0 there is no
+// IMU at all, so the accel and body-angle apogee votes never fire and the
+// state machine is running on barometric data alone.
+#define I2C1_ENABLED 1
 
 #if RS232_HB_MODE == RS232_HB_UPATT
 const uint32_t  rs232_hb_interval = 100;  // 10 Hz — near-continuous stream
@@ -130,24 +229,12 @@ const uint32_t  rs232_hb_interval = 1000; // 1 Hz
 static uint32_t rs232_hb_last_tick = 0;
 static uint8_t  hbst               = 0;
 
-// Flight events mapped onto the Tablo 5 status bits (names from EK-15 Tablo 3).
-// The flight SM exposes a single state rather than individual event flags, so
-// the bits are derived from how far the progression has advanced — events are
-// cumulative, since a state is only reachable by passing through the earlier
-// ones. Once SUT lands and real per-event flags exist, prefer those.
-static uint16_t Status_BitsFromState(uint8_t state)
-{
-    uint16_t bits = 0;
-    if (state >= FLIGHT_BOOST)                { bits |= (1u << 0); } // KTE liftoff
-    if (state >= FLIGHT_COAST)                { bits |= (1u << 1); } // YSD burn time
-    if (state >= FLIGHT_MIN_ALTITUDE_REACHED) { bits |= (1u << 2); } // IEA min altitude
-    if (state >= FLIGHT_APOGEE)               { bits |= (1u << 3); } // GAA body angle
-    if (state >= FLIGHT_DESCENT)              { bits |= (1u << 4)     // ATE descent
-                                                      | (1u << 5); }  // SPE drogue cmd
-    if (state >= FLIGHT_MAIN)                 { bits |= (1u << 6)     // BIT alt threshold
-                                                      | (1u << 7); }  // APE main cmd
-    return bits;
-}
+// The Tablo 5 status bits now come from FlightSM_GetStatusBits(), which reads
+// real latching per-event flags inside the state machine. This replaced an
+// earlier version here that inferred them from how far the state enum had
+// advanced; that could not represent GAA (a vote, not a state) and forced ATE
+// and SPE to appear in the same instant even though the algorithm detects
+// descent strictly before it commands the drogue.
 
 // Indexed by Test_Status (Test_SIT, Test_SUT, Test_Stop). Only referenced by
 // optional paths (DBG_PRINT, ASCII heartbeat), so it goes unused when both
@@ -175,16 +262,24 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     DBG_PRINT("Pyro Module Initialized\r\n");
     HAL_Delay(3000);
     
+#if I2C1_ENABLED
     I2C_BusRecover(hi2c1, GPIOB, GPIO_PIN_6, GPIOB, GPIO_PIN_7);
+#else
+    (void)hi2c1;
+#endif
     I2C_BusRecover(hi2c2, GPIOB, GPIO_PIN_10, GPIOB, GPIO_PIN_3);
 
     // I2C bus scan — probe known addresses to verify buses are alive
+#if I2C1_ENABLED
     DBG_PRINT("Scanning I2C1...\r\n");
     for (uint8_t addr = 1; addr < 128; addr++) {
         if (HAL_I2C_IsDeviceReady(hi2c1, (uint16_t)(addr << 1), 2, 10) == HAL_OK) {
             DBG_PRINT("  I2C1 device found at 0x%02X\r\n", addr);
         }
     }
+#else
+    DBG_PRINT("I2C1 disabled (I2C1_ENABLED=0) — skipping scan\r\n");
+#endif
     DBG_PRINT("Scanning I2C2...\r\n");
     for (uint8_t addr = 1; addr < 128; addr++) {
         if (HAL_I2C_IsDeviceReady(hi2c2, (uint16_t)(addr << 1), 2, 10) == HAL_OK) {
@@ -199,6 +294,10 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
         .dlpf     = MPU6050_DLPF_44HZ
     };
 
+#if !I2C1_ENABLED
+    (void)mpuConfig;
+    DBG_PRINT("MPU6050 skipped: I2C1 disabled\r\n");
+#else
     uint8_t mpu_err = MPU6050_Initialise(&myMPU6050, hi2c1, &mpuConfig);
     if (mpu_err != 0) {
         DBG_PRINT("Failed to initialize MPU6050: err=0x%02X i2c_err=0x%08lX\r\n",
@@ -213,6 +312,7 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
         mpu_healthy = true;
         DBG_PRINT("MPU6050 OK\r\n");
     }
+#endif /* I2C1_ENABLED */
 
     // 2. Initialize Dual Independent BME280s across different I2C lines
     BME280_Config baroConfig = {
@@ -223,6 +323,7 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
         .mode     = BME280_MODE_NORMAL
     };
 
+#if I2C1_ENABLED
     uint8_t b1_err = BME280_Initialise(&baro1, hi2c1, &baroConfig);
     if (b1_err != 0) {
         DBG_PRINT("Failed to initialize BME280 #1: err=0x%02X i2c_err=0x%08lX\r\n",
@@ -231,6 +332,13 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     } else {
         DBG_PRINT("BME280 #1 OK\r\n");
     }
+#else
+    // Non-zero reads as "failed init" everywhere downstream: the calibration
+    // loop below skips baro1, and sensor1_healthy latches false so the fusion
+    // and the SIT pressure field both fall through to baro2.
+    const uint8_t b1_err = 0xFF;
+    DBG_PRINT("BME280 #1 skipped: I2C1 disabled\r\n");
+#endif
 
     uint8_t b2_err = BME280_Initialise(&baro2, hi2c2, &baroConfig);
     if (b2_err != 0) {
@@ -341,15 +449,60 @@ void App_Run(void) {
         // A test-mode switch cancels any SIT stream still running.
         sit_arming = false;
         sit_active = false;
-        // TODO: arm 1 s SUT timer, start 10 Hz status TX per Tablo spec
+
+        sut_arming        = true;
+        sut_active        = false;
+        sut_arm_tick      = current_time;
+        sut_data_stale    = false;
+        sut_sample_count  = 0;
+        sut_max_acc_raw   = 0.0f;
+        sut_max_alt_seen  = 0.0f;
+        sut_peak_ax = sut_peak_ay = sut_peak_az = 0.0f;
+        sut_first_ax = sut_first_ay = sut_first_az = 0.0f;
+
+        // Start every synthetic flight from the pad. EK-7 2.1.4k lets the
+        // judges run SUT repeatedly with different profiles, and a state
+        // machine still sitting in FLIGHT_LANDED from the previous run would
+        // ignore the whole next one. Also clears the Tablo 5 status bits, so
+        // the ground software's event panel starts blank.
+        FlightSM_Init();
     }
 
     if (flag_stop_pending) {
         flag_stop_pending = 0;
         DBG_PRINT("RS232: STOP command received\r\n");
-        sit_arming = false;
-        sit_active = false;
-        // TODO: tear down whatever SUT started, return to normal flight-computer operation
+
+        // STOP is the protocol's single "return to normal" boundary, defined
+        // identically for both scenarios (2.1.2g/h and 2.1.4i/j): drop every
+        // test flag, stop transmitting, and be ready to start a fresh test.
+        // Doing the whole teardown here means there is exactly one place that
+        // has to be correct, and it is a place the test device always visits -
+        // the ground software issues STOP at the end of every run.
+        sit_arming     = false;
+        sit_active     = false;
+        sut_arming     = false;
+        sut_active     = false;
+        sut_data_stale = false;
+
+        // A synthetic flight leaves the state machine wherever the profile
+        // ended, normally FLIGHT_LANDED. Without this reset the board is inert
+        // afterwards - the progression only runs forward, so it can never
+        // detect a launch again. Measured on the bench: after a full SUT run
+        // it sat in LANDED indefinitely and the next test did nothing.
+        // Also clears the Tablo 5 status bits, so the ground software's event
+        // panel starts blank for the next run.
+        FlightSM_Init();
+
+        // Drop the last synthetic IMU sample. These are module-scope and are
+        // only overwritten when a real IMU read succeeds, so on a board whose
+        // MPU6050 is absent or faulty the synthetic accel/angle values would
+        // otherwise keep being reported as live sensor readings - observed
+        // exactly that on the perf board, where SIT after a SUT run still
+        // showed the profile's final 0.50/0.20/0.30 and 15 deg pitch.
+        // Altitude is left alone: the next barometer sample owns it 50 ms later.
+        ax = ay = az = 0.0f;
+        gy = gz = 0.0f;
+        rocket_pitch = rocket_roll = rocket_yaw = 0.0f;
     }
 
     // Spec 2.1.2c: hold off one second after the command before the first packet.
@@ -360,25 +513,133 @@ void App_Run(void) {
         DBG_PRINT("RS232: SIT armed, streaming at 10 Hz\r\n");
     }
 
+    // Spec 2.1.4c: same one-second hold-off before SUT goes live.
+    if (sut_arming && current_time - sut_arm_tick >= sut_arm_delay) {
+        sut_arming         = false;
+        sut_active         = true;
+        sut_last_tx_tick   = current_time - sut_tx_interval; // transmit immediately
+        sut_last_data_tick = current_time; // don't trip the timeout instantly
+        DBG_PRINT("RS232: SUT armed, status TX at 10 Hz\r\n");
+    }
+
     if (flag_sut_data_ready) {
         flag_sut_data_ready = 0;
-        DBG_PRINT("RS232: SUT data packet received (%u bytes)\r\n", ukb_sut_data_len);
-        // TODO: feed ukb_sut_data[0..ukb_sut_data_len) (Tablo 4 synthetic
-        // sensor packet) into the algorithm under test instead of live sensors
+
+        UKB_SensorSample s;
+        if (SUT_ENGAGED && UKB_ParseSensorPacket((const uint8_t *)ukb_sut_data, &s)) {
+            sut_last_data_tick = current_time;
+            sut_data_stale     = false;
+            sut_sample_count++;
+            sut_pressure_mbar  = s.pressure_mbar;
+
+            // Spec 2.1.4d: the synthetic values REPLACE our own sensors. The
+            // live IMU and barometer reads are skipped entirely while
+            // SUT_ENGAGED (see PHASE 1), so nothing overwrites these before
+            // the state machine sees them - including during the arming
+            // window, where data is now processed rather than discarded.
+            rocket_altitude = s.altitude_m;
+
+            // Diagnostics, latched for reading over SWD after a run. Recorded
+            // BEFORE the unit conversion below, so they show what the test
+            // device actually put on the wire.
+            float raw_mag = sqrtf(s.acc_x * s.acc_x + s.acc_y * s.acc_y +
+                                  s.acc_z * s.acc_z);
+            if (raw_mag > sut_max_acc_raw) {
+                sut_max_acc_raw = raw_mag;
+                sut_peak_ax = s.acc_x;
+                sut_peak_ay = s.acc_y;
+                sut_peak_az = s.acc_z;
+            }
+            if (s.altitude_m > sut_max_alt_seen) { sut_max_alt_seen = s.altitude_m; }
+            if (sut_sample_count == 1u) {
+                sut_first_ax = s.acc_x;
+                sut_first_ay = s.acc_y;
+                sut_first_az = s.acc_z;
+            }
+
+            // AXIS REMAP: the test device's longitudinal axis is Z, not X.
+            //
+            // EK-7 section 1.2 defines X as the longitudinal (nose) axis and Z
+            // as vertical. The ground software does not follow its own spec:
+            // it puts thrust and drag on Z and leaves X within +/-2 m/s^2 for
+            // an entire flight. flight_sm.c reads ax for both the liftoff gate
+            // (`ax > 24.5f`) and the burnout gate (`ax < 2.0f`), so unmapped it
+            // sees a rocket that never moves - 1173 valid packets, zero
+            // checksum errors, and not one status bit set.
+            //
+            // Logged over SWD from the real device, the first sample of a run
+            // IS the peak (the dataset opens at full thrust, already at 113 m):
+            //     (0.94, -3.00, +221.34) m/s^2   = 22.6 g on +Z
+            // and through the coast Z runs -18.4 -> -3.9 -> -0.6 as drag decays
+            // with airspeed, then rebuilds on the way down. Thrust is +Z,
+            // deceleration is -Z: Z behaves exactly as our X is meant to.
+            //
+            // Swapping X and Z preserves the vector magnitude, so the apogee
+            // "weightlessness" vote (net_g < 3.92) is unaffected either way.
+            // The negative coast values are a bonus: `ax < 2.0f` now trips the
+            // moment the motor quits instead of waiting for drag to fall below
+            // 2 m/s^2 near apogee, which would have latched YSD very late.
+            //
+            // SUT-only. The real MPU6050 path keeps its own axis convention.
+#if UKB_SUT_SWAP_XZ
+            ax = s.acc_z;   // longitudinal / thrust axis
+            ay = s.acc_y;
+            az = s.acc_x;
+#else
+            ax = s.acc_x;
+            ay = s.acc_y;
+            az = s.acc_z;
+#endif
+            // Bolum 1.2 body axes: X roll (longitudinal), Y pitch (lateral),
+            // Z yaw (vertical).
+            rocket_roll  = s.ang_x;
+            rocket_pitch = s.ang_y;
+            rocket_yaw   = s.ang_z;
+
+            // Tablo 4 carries no angular rates, so the apogee vote's
+            // "rate reversed" half has nothing to work from and is fed 0.
+            // The orientation vote still functions through its pitch-over
+            // half, which reads the synthetic angle directly. Deriving a rate
+            // by differencing consecutive angles was considered and rejected:
+            // at 10 Hz with 2-decimal values it amplifies a one-degree step
+            // into 10 deg/s, which is enough to swing a vote on noise alone.
+            gy = 0.0f;
+
+            // Drive the algorithm once per SAMPLE here, not once per superloop
+            // iteration as the live-sensor path does below. DESCENT_CONFIRM in
+            // flight_sm.c counts consecutive calls, so at loop rate its five
+            // "confirmations" elapse in microseconds and provide no filtering
+            // at all - one bad sample would fire the drogue. Per-sample, five
+            // confirmations is 500 ms of sustained descent at the 10 Hz feed,
+            // which is what that constant was written to mean.
+            FlightSM_Update(rocket_altitude, ax, ay, az, rocket_pitch, gy);
+        }
+    }
+
+    // Tablo 7 Test Timeout: the feed has dried up mid-test.
+    if (sut_active && !sut_data_stale
+        && current_time - sut_last_data_tick >= sut_data_timeout) {
+        sut_data_stale = true;
+        DBG_PRINT("RS232: SUT data timeout (%lu ms, %lu samples)\r\n",
+                  (unsigned long)sut_data_timeout, (unsigned long)sut_sample_count);
     }
 
     // ====================================================================
     // PHASE 1: TIMED NON-BLOCKING TRIGGER REQUESTS
     // ====================================================================
 
-    if (current_time - imu_last_tick >= imu_interval) {
+    // Spec 2.1.4d: during SUT the board must ignore its own sensors and treat
+    // the RS232 feed as its sensor input. Skipping the reads outright (rather
+    // than reading and discarding) is both the literal requirement and free
+    // superloop time - these are blocking I2C transfers.
+    if (!SUT_ENGAGED && current_time - imu_last_tick >= imu_interval) {
         imu_last_tick = current_time;
         if (mpu_healthy && MPU6050_ReadAll(&myMPU6050) == HAL_OK) {
             myMPU6050.freshData = true;
         }
     }
 
-    if (current_time - baro_last_tick >= baro_interval) {
+    if (!SUT_ENGAGED && current_time - baro_last_tick >= baro_interval) {
         baro_last_tick = current_time;
 
         if (avionics_health.sensor1_healthy && BME280_ReadAll(&baro1) == HAL_OK) {
@@ -394,7 +655,7 @@ void App_Run(void) {
     // PHASE 2: ASYNCHRONOUS BACKGROUND COMPLETION CHECKS
     // ====================================================================
 
-    if (myMPU6050.freshData) {
+    if (myMPU6050.freshData && !SUT_ENGAGED) {
         myMPU6050.freshData = false;
 
         // Update module-scope variables so FlightSM_Update always has fresh data
@@ -406,7 +667,17 @@ void App_Run(void) {
         gy = myMPU6050.gyro[1];       // Pitch Rate — module-scope, FlightSM reads it
         gz = myMPU6050.gyro[2];       // Yaw Rate
 
-        float accel_pitch = atan2f(-ax, sqrtf(ay * ay + az * az)) * RAD_TO_DEG;
+        // Pitch is measured FROM VERTICAL: 0 = nose straight up, 90 =
+        // horizontal, 180 = nose down. The +90 offset is what puts it on that
+        // scale - atan2f alone returns -90 for a vertical rocket, and
+        // flight_sm.c's pitch-over vote was silently always-true as a result
+        // (see the note there). The SUT feed already uses this convention, so
+        // both data paths now mean the same thing by "pitch".
+        //
+        // Consequence for the bench: a board lying flat now reports aci_y ~90
+        // in SIT packets rather than ~0. Still well inside the +/-180 the
+        // ground software accepts, and it is the physically honest number.
+        float accel_pitch = 90.0f + atan2f(-ax, sqrtf(ay * ay + az * az)) * RAD_TO_DEG;
         float accel_roll  = atan2f(ay, az) * RAD_TO_DEG;
 
         rocket_pitch = Complementary_Update(&pitch_cf, accel_pitch, gy);
@@ -428,13 +699,13 @@ void App_Run(void) {
     static float alt2 = 0.0f;
     bool process_fusion = false;
 
-    if (baro1.freshData) {
+    if (baro1.freshData && !SUT_ENGAGED) {
         baro1.freshData = false;
         alt1 = 44330.0f * (1.0f - powf((baro1.pressure_hPa / sea_level_pressure), 0.1902949f));
         process_fusion = true;
     }
 
-    if (baro2.freshData) {
+    if (baro2.freshData && !SUT_ENGAGED) {
         baro2.freshData = false;
         alt2 = 44330.0f * (1.0f - powf((baro2.pressure_hPa / sea_level_pressure), 0.1902949f));
         process_fusion = true;
@@ -444,8 +715,12 @@ void App_Run(void) {
         rocket_altitude = Baro_FusedAltitude(&avionics_health, &baro1_stats, &baro2_stats, alt1, alt2);
     }
 
-    // ax/ay/az/gy are now module-scope — always valid here
-    FlightSM_Update(rocket_altitude, ax, ay, az, rocket_pitch, gy);
+    // ax/ay/az/gy are now module-scope — always valid here.
+    // Not called during SUT: there the state machine is driven once per
+    // received synthetic packet instead, up in the flag_sut_data_ready block.
+    if (!SUT_ENGAGED) {
+        FlightSM_Update(rocket_altitude, ax, ay, az, rocket_pitch, gy);
+    }
 
     // ====================================================================
     // SIT SENSOR STREAM (Tablo 3, 10 Hz on USART6)
@@ -488,13 +763,34 @@ void App_Run(void) {
         sitst = (uint8_t)UKB_RS232_SendSensorPacket(&sample);
     }
 
-    // Idle link heartbeat — see RS232_HB_MODE.
-    if (!sit_active && current_time - rs232_hb_last_tick >= rs232_hb_interval) {
+    // ====================================================================
+    // SUT STATUS STREAM (Tablo 6, 10 Hz on USART6)
+    // Spec 2.1.4f: while SUT runs, report which algorithm stage we are in.
+    // This is the only thing the ground software has to judge the run by,
+    // so it keeps flowing even when the synthetic feed has gone stale - a
+    // silent link and a stalled test look identical from the other end,
+    // and only one of them is our fault.
+    // ====================================================================
+    if (sut_active && current_time - sut_last_tx_tick >= sut_tx_interval) {
+        // Advance by one whole interval rather than snapping to now, for the
+        // same reason as the SIT stream: snapping turns loop latency into a
+        // systematically slow rate (it measured ~8 Hz against a 10 Hz target).
+        sut_last_tx_tick += sut_tx_interval;
+        if (current_time - sut_last_tx_tick >= sut_tx_interval) {
+            sut_last_tx_tick = current_time;
+        }
+
+        sutst = (uint8_t)UKB_RS232_SendStatusPacket(FlightSM_GetStatusBits());
+    }
+
+    // Idle link heartbeat — see RS232_HB_MODE. Suppressed during either test:
+    // SIT has its own 10 Hz sensor stream and SUT its own 10 Hz status stream.
+    if (!sit_active && !sut_active
+        && current_time - rs232_hb_last_tick >= rs232_hb_interval) {
         rs232_hb_last_tick = current_time;
 
 #if RS232_HB_MODE == RS232_HB_BINARY
-        hbst = (uint8_t)UKB_RS232_SendStatusPacket(
-                   Status_BitsFromState(FlightSM_GetState()));
+        hbst = (uint8_t)UKB_RS232_SendStatusPacket(FlightSM_GetStatusBits());
 #elif RS232_HB_MODE == RS232_HB_UPATT
         // 64 x 0x55 then CRLF, so a terminal shows fixed-width rows of 'U'.
         // ~5.7 ms of blocking TX per burst at 115200.
@@ -557,6 +853,16 @@ void App_Run(void) {
                   rs232_mode_name[UKB_RS232_GetMode()],
                   sit_active ? "streaming" : (sit_arming ? "arming" : "idle"),
                   sitst, hbst);
+
+        DBG_PRINT("SUT: %s samples=%lu rx=%lu cks_err=%lu bits=0x%04X "
+                  "p=%.2fhPa tx_status=%d%s\r\n",
+                  sut_active ? "running" : (sut_arming ? "arming" : "idle"),
+                  (unsigned long)sut_sample_count,
+                  (unsigned long)ukb_sut_rx_count,
+                  (unsigned long)ukb_sut_cks_errors,
+                  (unsigned)FlightSM_GetStatusBits(),
+                  sut_pressure_mbar, sutst,
+                  sut_data_stale ? "  [DATA STALE]" : "");
 
         DBG_PRINT("IMU: ax=%.2f ay=%.2f az=%.2f gy=%.2f pitch=%.1f roll=%.1f\r\n",
                   ax, ay, az, gy, rocket_pitch, rocket_roll);

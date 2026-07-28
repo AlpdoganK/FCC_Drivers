@@ -188,7 +188,12 @@ def run(port: str, baud: int, command: str, duration: float):
         except KeyboardInterrupt:
             print("\ninterrupted")
 
-        if command == "sit":
+        # Always close a test we started. STOP is the protocol's only way back
+        # to normal operation, and the board now does its whole teardown there
+        # (flight state machine reset, test flags cleared). Leaving a test
+        # running means the next run starts from a board that is still mid-test
+        # and, after SUT, still sitting in FLIGHT_LANDED.
+        if command in ("sit", "sut"):
             stop = build_command(CMD_STOP)
             ser.write(stop)
             ser.flush()

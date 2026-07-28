@@ -57,6 +57,9 @@ volatile uint8_t flag_sut_data_ready = 0;
 volatile uint8_t  ukb_sut_data[UKB_SUT_DATA_LEN];
 volatile uint16_t ukb_sut_data_len = 0;
 
+volatile uint32_t ukb_sut_rx_count   = 0;
+volatile uint32_t ukb_sut_cks_errors = 0;
+
 /* Checksum byte the SPEC's Tablo 1 lists for each command. The real test
  * software does NOT send these - it sends (0xAA + cmd) & 0xFF, the same
  * header-inclusive rule confirmed for outbound packets (observed on the
@@ -145,9 +148,26 @@ static void UKB_HandleFrame(const uint8_t *f, uint16_t len)
     else if (len == UKB_SENSOR_PACKET_LEN && f[0] == UKB_HEADER_DATA
              && ukb_mode == Test_SUT) {
         /* Synthetic sensor data during SUT (Tablo 4). App_Run consumes
-         * ukb_sut_data and clears flag_sut_data_ready once done. */
+         * ukb_sut_data and clears flag_sut_data_ready once done.
+         *
+         * Accept EITHER checksum range. Section 3 only says "sum of the bytes
+         * mod 256" and never states where the sum starts; our own outbound
+         * packets include the header because that is what the ground software
+         * demanded on the bench, but nothing proves the test device applies
+         * the same rule to what it sends us. Rejecting every synthetic packet
+         * over a one-byte disagreement would look exactly like a dead test,
+         * so take either and count the misses instead. */
+        uint8_t cks_with_header = UKB_Checksum(f, 33u);      /* [0..32]  */
+        uint8_t cks_payload     = UKB_Checksum(&f[1], 32u);  /* [1..32]  */
+
+        if (f[33] != cks_with_header && f[33] != cks_payload) {
+            ukb_sut_cks_errors++;
+            return; /* corrupt - drop it rather than fly on bad data */
+        }
+
         memcpy((void *)ukb_sut_data, f, UKB_SENSOR_PACKET_LEN);
         ukb_sut_data_len    = UKB_SENSOR_PACKET_LEN;
+        ukb_sut_rx_count++;
         flag_sut_data_ready = 1;
     }
 }
@@ -159,7 +179,23 @@ static void UKB_FeedByte(uint8_t b)
         /* Waiting for a header; anything else is inter-frame noise. */
         if (b == UKB_HEADER) {
             frame_expect = CMD_FRAME_LEN;
-        } else if (b == UKB_HEADER_DATA) {
+        } else if (b == UKB_HEADER_DATA && ukb_mode == Test_SUT) {
+            /* A 36-byte data packet is only ever legitimate during SUT -
+             * UKB_HandleFrame rejects it in any other mode. Refusing to arm
+             * one outside SUT is what stops a single noise byte deafening the
+             * board: 0xAA and 0xAB differ only in bit 0, the first bit on the
+             * wire after the start bit, so one flipped bit turns a command
+             * header into a data header. That armed a 36-byte frame which
+             * then swallowed the next 35 bytes - seven whole commands - and
+             * the board looked dead the entire time. Reproduced on the bench
+             * by injecting one 0xAB; recovery took exactly 7 retries.
+             *
+             * Gating on the mode kills that at the source and, unlike an
+             * idle-gap resync, assumes nothing about how the sender chunks
+             * its bytes. That matters: a USB-serial driver's latency timer
+             * can split a 5-byte command into fragments, and any scheme that
+             * discards a partial frame on an idle line loses every such
+             * command - measured at 100% loss, at gaps from 1 ms to 50 ms. */
             frame_expect = UKB_SENSOR_PACKET_LEN;
         } else {
             return;
@@ -206,7 +242,27 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
             rx_read_pos = 0u;
         }
     }
-    /* Circular DMA never stops, so there is nothing to re-arm here. */
+
+    /* Deliberately NOT resetting the frame assembler on an idle line.
+     *
+     * It looks tempting - a stale fragment left by noise would be cleared -
+     * and it was tried here. It is wrong, twice over, and both failures were
+     * measured on the bench:
+     *
+     *  - It assumes a frame arrives as one contiguous burst. A USB-serial
+     *    driver's latency timer can split a 5-byte command into fragments
+     *    separated by milliseconds of idle line, and discarding the partial
+     *    frame then loses EVERY such command - 100% loss at gaps from 1 ms to
+     *    50 ms, versus the ~3% it was trying to fix.
+     *
+     *  - Even placed after the consume loop, it interacts badly with the
+     *    circular buffer wrap. A frame straddling the wrap has its head
+     *    delivered on the transfer-complete event and its tail on IDLE.
+     *
+     * The wedge this was meant to cure is handled at its source instead - see
+     * the mode gate in UKB_FeedByte, which needs no timing assumption at all.
+     *
+     * Circular DMA never stops, so there is nothing to re-arm here. */
 }
 
 /* A UART error (overrun, framing, noise) aborts DMA reception and would
@@ -319,6 +375,44 @@ static uint16_t UKB_PackFloat(uint8_t *dst, float v)
     dst[3] = c.bytes[3];
 #endif
     return 4u;
+}
+
+/* Inverse of UKB_PackFloat: 4 wire bytes -> float, same byte order. */
+static float UKB_UnpackFloat(const uint8_t *src)
+{
+    UKB_FloatBytes c;
+#if UKB_FLOAT_BIG_ENDIAN
+    c.bytes[3] = src[0];
+    c.bytes[2] = src[1];
+    c.bytes[1] = src[2];
+    c.bytes[0] = src[3];
+#else
+    c.bytes[0] = src[0];
+    c.bytes[1] = src[1];
+    c.bytes[2] = src[2];
+    c.bytes[3] = src[3];
+#endif
+    return c.f32;
+}
+
+bool UKB_ParseSensorPacket(const uint8_t *pkt, UKB_SensorSample *s)
+{
+    if (pkt == NULL || s == NULL || pkt[0] != UKB_HEADER_DATA) {
+        return false;
+    }
+
+    /* Field order is Tablo 4, which is the same layout we transmit in Tablo 3.
+     * Offsets: header at [0], then eight consecutive FLOAT32s from [1]. */
+    s->altitude_m    = UKB_UnpackFloat(&pkt[1]);
+    s->pressure_mbar = UKB_UnpackFloat(&pkt[5]);
+    s->acc_x         = UKB_UnpackFloat(&pkt[9]);
+    s->acc_y         = UKB_UnpackFloat(&pkt[13]);
+    s->acc_z         = UKB_UnpackFloat(&pkt[17]);
+    s->ang_x         = UKB_UnpackFloat(&pkt[21]);
+    s->ang_y         = UKB_UnpackFloat(&pkt[25]);
+    s->ang_z         = UKB_UnpackFloat(&pkt[29]);
+
+    return true;
 }
 
 HAL_StatusTypeDef UKB_RS232_SendSensorPacket(const UKB_SensorSample *s)
