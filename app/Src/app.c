@@ -123,6 +123,12 @@ static float    sut_max_alt_seen  = 0.0f;
 static float    sut_peak_ax = 0.0f, sut_peak_ay = 0.0f, sut_peak_az = 0.0f;
 static float    sut_first_ax = 0.0f, sut_first_ay = 0.0f, sut_first_az = 0.0f;
 
+// Low-pass filters for the inbound synthetic stream (see UKB_SUT_FILTER_ENABLED).
+// Re-initialised at the start of every SUT so one run cannot bias the next.
+static LowPassFilter_t sut_lpf_alt;
+static LowPassFilter_t sut_lpf_ax,   sut_lpf_ay,   sut_lpf_az;
+static LowPassFilter_t sut_lpf_angx, sut_lpf_angy, sut_lpf_angz;
+
 // ---- Inbound SUT acceleration units ---------------------------------------
 // The units ARE m/s^2, exactly as EK-7's Tablo 2/4 say. Leave this at 0.
 //
@@ -164,6 +170,40 @@ static float    sut_first_ax = 0.0f, sut_first_ay = 0.0f, sut_first_az = 0.0f;
 // The 1 s delay is still honoured for the outbound status stream, which is
 // the part the ground software actually observes.
 #define SUT_ENGAGED (sut_active || sut_arming)
+
+// ---- Filtering of inbound SUT data ----------------------------------------
+// EK-7 2.1.4d does not merely say to run the synthetic data through the flight
+// algorithm - it says the data must be subjected to "filtreleme islemlerine ve
+// ucus algoritmalarina", filtering operations AND flight algorithms. Feeding
+// it in raw was therefore non-compliant, and the SUT_1 "Yuksek Gurultu"
+// (high noise) scenario exists precisely to catch that.
+//
+// Symptom it produced: ATE (bit 4, altitude falling) and GAA (bit 3, body
+// angle) latch in the order GAA -> ATE on the clean and normal-noise datasets,
+// which is physically right - the rocket pitches past 45 degrees while still
+// coasting over the top, before altitude has dropped a measurable 1.5 m. On
+// the high-noise dataset the order INVERTED to ATE -> GAA, because a noise
+// spike satisfied `altitude < alt_peak - 1.5f` long before any real descent.
+// ATE latches off a single sample with no debounce, so one bad reading set it
+// permanently and early.
+//
+// Firing was never affected - DESCENT_CONFIRM's five consecutive confirmations
+// already guard the deployment decision - but the reported flag had no such
+// protection, and the judges read the flags.
+//
+// A filter also protects apogee_tracker.alt_peak, which is a running MAXIMUM
+// of altitude and only ever increases: one positive spike inflates it forever,
+// after which the rocket must fall 1.5 m below an inflated peak, DELAYING the
+// drogue. So in noise this should make firing earlier, not later.
+//
+// Alphas are deliberately light. LPF_Update is y += alpha*(x - y), so at
+// alpha 0.5 and the device's 10 Hz the time constant is ~100 ms, one sample.
+// Lag on the peak-to-current DIFFERENCE that drives baro_vote is smaller still,
+// because both sides of the comparison are delayed together.
+#define UKB_SUT_FILTER_ENABLED  1
+#define UKB_SUT_LPF_ALPHA_ALT   0.5f
+#define UKB_SUT_LPF_ALPHA_ACC   0.5f
+#define UKB_SUT_LPF_ALPHA_ANG   0.5f
 
 // ---- RS232 idle heartbeat --------------------------------------------------
 // Sent once a second while no test is streaming, so the ground station shows a
@@ -460,6 +500,17 @@ void App_Run(void) {
         sut_peak_ax = sut_peak_ay = sut_peak_az = 0.0f;
         sut_first_ax = sut_first_ay = sut_first_az = 0.0f;
 
+        // Fresh filters per run. LPF_Update seeds prev_out from the first
+        // sample (the `initialized` guard in filters.h), so there is no
+        // start-up ramp from zero to worry about.
+        LPF_Init(&sut_lpf_alt,  UKB_SUT_LPF_ALPHA_ALT);
+        LPF_Init(&sut_lpf_ax,   UKB_SUT_LPF_ALPHA_ACC);
+        LPF_Init(&sut_lpf_ay,   UKB_SUT_LPF_ALPHA_ACC);
+        LPF_Init(&sut_lpf_az,   UKB_SUT_LPF_ALPHA_ACC);
+        LPF_Init(&sut_lpf_angx, UKB_SUT_LPF_ALPHA_ANG);
+        LPF_Init(&sut_lpf_angy, UKB_SUT_LPF_ALPHA_ANG);
+        LPF_Init(&sut_lpf_angz, UKB_SUT_LPF_ALPHA_ANG);
+
         // Start every synthetic flight from the pad. EK-7 2.1.4k lets the
         // judges run SUT repeatedly with different profiles, and a state
         // machine still sitting in FLIGHT_LANDED from the previous run would
@@ -537,7 +588,13 @@ void App_Run(void) {
             // SUT_ENGAGED (see PHASE 1), so nothing overwrites these before
             // the state machine sees them - including during the arming
             // window, where data is now processed rather than discarded.
+            // Filtered before ANY use, so apogee_tracker.alt_peak tracks a
+            // smoothed altitude rather than a running maximum of the noise.
+#if UKB_SUT_FILTER_ENABLED
+            rocket_altitude = LPF_Update(&sut_lpf_alt, s.altitude_m);
+#else
             rocket_altitude = s.altitude_m;
+#endif
 
             // Diagnostics, latched for reading over SWD after a run. Recorded
             // BEFORE the unit conversion below, so they show what the test
@@ -582,19 +639,41 @@ void App_Run(void) {
             //
             // SUT-only. The real MPU6050 path keeps its own axis convention.
 #if UKB_SUT_SWAP_XZ
-            ax = s.acc_z;   // longitudinal / thrust axis
-            ay = s.acc_y;
-            az = s.acc_x;
+            float in_ax = s.acc_z;   // longitudinal / thrust axis
+            float in_ay = s.acc_y;
+            float in_az = s.acc_x;
 #else
-            ax = s.acc_x;
-            ay = s.acc_y;
-            az = s.acc_z;
+            float in_ax = s.acc_x;
+            float in_ay = s.acc_y;
+            float in_az = s.acc_z;
 #endif
+
+            // The live path's accelerations arrive pre-filtered by the
+            // MPU6050's own 44 Hz DLPF; the synthetic ones have no such
+            // hardware stage, so they get one here.
+#if UKB_SUT_FILTER_ENABLED
+            ax = LPF_Update(&sut_lpf_ax, in_ax);
+            ay = LPF_Update(&sut_lpf_ay, in_ay);
+            az = LPF_Update(&sut_lpf_az, in_az);
+#else
+            ax = in_ax;
+            ay = in_ay;
+            az = in_az;
+#endif
+
             // Bolum 1.2 body axes: X roll (longitudinal), Y pitch (lateral),
-            // Z yaw (vertical).
+            // Z yaw (vertical). The live path smooths these through
+            // Complementary_Update; with no gyro in Tablo 4 the low-pass is
+            // the closest equivalent available here.
+#if UKB_SUT_FILTER_ENABLED
+            rocket_roll  = LPF_Update(&sut_lpf_angx, s.ang_x);
+            rocket_pitch = LPF_Update(&sut_lpf_angy, s.ang_y);
+            rocket_yaw   = LPF_Update(&sut_lpf_angz, s.ang_z);
+#else
             rocket_roll  = s.ang_x;
             rocket_pitch = s.ang_y;
             rocket_yaw   = s.ang_z;
+#endif
 
             // Tablo 4 carries no angular rates, so the apogee vote's
             // "rate reversed" half has nothing to work from and is fed 0.
@@ -716,9 +795,41 @@ void App_Run(void) {
     }
 
     // ax/ay/az/gy are now module-scope — always valid here.
-    // Not called during SUT: there the state machine is driven once per
-    // received synthetic packet instead, up in the flag_sut_data_ready block.
-    if (!SUT_ENGAGED) {
+    //
+    // Driven by FRESH BAROMETER DATA, not once per superloop iteration.
+    // flight_sm.c's DESCENT_CONFIRM counts consecutive calls and is documented
+    // as "~250ms", which is only true at one call per barometer sample. Called
+    // from the loop instead, the five confirmations completed in tens of
+    // microseconds while re-reading the SAME altitude thousands of times —
+    // rocket_altitude only changes inside `if (process_fusion)` above. And
+    // because the else-branch decrements at the same rate, the counter both
+    // saturated and drained instantly, making it exactly equivalent to no
+    // debounce at all.
+    //
+    // That mattered because the accel vote goes true long before apogee: on a
+    // real test profile the specific force (drag only, once the motor is out)
+    // decays through the 3.92 m/s^2 threshold at ~1929 m, roughly 1000 m below
+    // a 2922 m apogee. From there up, a SINGLE barometric sample reading 1.5 m
+    // below the running peak was enough to fire the drogue.
+    //
+    // Gating on process_fusion rather than on a 20 Hz timer is deliberate, and
+    // is the safer of the two: if both barometers die, rocket_altitude freezes
+    // at its last value, and a timer would go on feeding that stale altitude
+    // to the state machine — if it happened to sit 1.5 m below alt_peak, the
+    // counter would reach 5 in 250 ms and deploy on dead sensors. No new
+    // sample, no count. It also avoids two 50 ms timers drifting out of phase
+    // and delivering two calls per sample, or none.
+    //
+    // Consequence to be aware of: with no barometer data the state machine
+    // stops advancing entirely, including the IMU-only PAD->BOOST->COAST
+    // transitions. Apogee is unreachable without baro anyway (v.baro_vote is
+    // mandatory), so nothing deployable is lost, but flight_state and the
+    // Tablo 5 bits will freeze too.
+    //
+    // Not called at all during SUT: the barometer reads are skipped there, so
+    // process_fusion is false, and the state machine is driven once per
+    // received synthetic packet up in the flag_sut_data_ready block instead.
+    if (!SUT_ENGAGED && process_fusion) {
         FlightSM_Update(rocket_altitude, ax, ay, az, rocket_pitch, gy);
     }
 
