@@ -1,0 +1,10 @@
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:71:13:Usart6_Flush	16	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:85:16:Usart6_ReceiveByte	32	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:102:20:SrErrorText	16	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:111:6:RS232_Loopback_Init	16	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:138:16:LoopByte	24	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:155:13:Printable	16	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:163:17:BinaryPatternCheck	24	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:179:13:RS232_Loopback_SelfTest	808	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:263:13:RS232_Loopback_Echo	16	static
+/home/alp/FCC_Drivers/app/Src/rs232_loopback.c:286:6:RS232_Loopback_Run	8	static

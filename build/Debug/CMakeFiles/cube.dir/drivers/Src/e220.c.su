@@ -1,5 +1,5 @@
 /home/alp/FCC_Drivers/drivers/Src/e220.c:10:17:CalculateCRC16	32	static
 /home/alp/FCC_Drivers/drivers/Src/e220.c:25:6:LoRa_Init	24	static
-/home/alp/FCC_Drivers/drivers/Src/e220.c:40:9:LoRa_TransmitTelemetry_NonBlocking	24	static
-/home/alp/FCC_Drivers/drivers/Src/e220.c:74:9:LoRa_TransmitTelemetry_Blocking	32	static
-/home/alp/FCC_Drivers/drivers/Src/e220.c:112:6:LoRa_TxCpltCallback	16	static
+/home/alp/FCC_Drivers/drivers/Src/e220.c:41:9:LoRa_TransmitTelemetry_NonBlocking	24	static
+/home/alp/FCC_Drivers/drivers/Src/e220.c:75:9:LoRa_TransmitTelemetry_Blocking	32	static
+/home/alp/FCC_Drivers/drivers/Src/e220.c:120:6:LoRa_TxCpltCallback	16	static

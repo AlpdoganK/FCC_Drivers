@@ -73,6 +73,12 @@
 },
 {
   "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/app/Src/e220_diag.c.obj -c /home/alp/FCC_Drivers/app/Src/e220_diag.c",
+  "file": "/home/alp/FCC_Drivers/app/Src/e220_diag.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/app/Src/e220_diag.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
   "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/app/Src/flight_sm.c.obj -c /home/alp/FCC_Drivers/app/Src/flight_sm.c",
   "file": "/home/alp/FCC_Drivers/app/Src/flight_sm.c",
   "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/app/Src/flight_sm.c.obj"
@@ -82,6 +88,12 @@
   "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/app/Src/rs232.c.obj -c /home/alp/FCC_Drivers/app/Src/rs232.c",
   "file": "/home/alp/FCC_Drivers/app/Src/rs232.c",
   "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/app/Src/rs232.c.obj"
+},
+{
+  "directory": "/home/alp/FCC_Drivers/build/Debug",
+  "command": "/usr/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F411xE -DUSE_HAL_DRIVER -I/home/alp/FCC_Drivers/app/Inc -I/home/alp/FCC_Drivers/drivers/Inc -I/home/alp/FCC_Drivers/middleware/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Core/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I/home/alp/FCC_Drivers/cmake/stm32cubemx/../../Drivers/CMSIS/Include  -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard  -Wall -fdata-sections -ffunction-sections -fstack-usage -O0 -g3 -std=gnu11 -o CMakeFiles/cube.dir/app/Src/rs232_loopback.c.obj -c /home/alp/FCC_Drivers/app/Src/rs232_loopback.c",
+  "file": "/home/alp/FCC_Drivers/app/Src/rs232_loopback.c",
+  "output": "/home/alp/FCC_Drivers/build/Debug/CMakeFiles/cube.dir/app/Src/rs232_loopback.c.obj"
 },
 {
   "directory": "/home/alp/FCC_Drivers/build/Debug",

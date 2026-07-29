@@ -38,6 +38,12 @@ typedef struct {
     uint16_t           auxPin;
     TelemetryPacket    packet;
     volatile uint8_t   tx_busy; // Volatile: modified in DMA ISR interrupt context
+
+    // Diagnostics from the last blocking transmit. aux_low_ms is how long the
+    // module held AUX low after being handed the packet: a few ms means it only
+    // buffered the bytes (nothing radiated), while tens-to-hundreds of ms is the
+    // air time of a real transmission (48 B at 2.4 kbps air rate is ~160 ms).
+    uint32_t           aux_low_ms;
 } LoRa_E220;
 
 void LoRa_Init(LoRa_E220 *lora, UART_HandleTypeDef *huart, GPIO_TypeDef *auxPort, uint16_t auxPin);

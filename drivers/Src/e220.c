@@ -27,7 +27,8 @@ void LoRa_Init(LoRa_E220 *lora, UART_HandleTypeDef *huart, GPIO_TypeDef *auxPort
     lora->auxPort = auxPort;
     lora->auxPin = auxPin;
     lora->tx_busy = 0;
-    
+    lora->aux_low_ms = 0;
+
     memset(&lora->packet, 0, sizeof(TelemetryPacket));
 
     lora->packet.header = 0xAB; // Set header byte
@@ -95,15 +96,22 @@ uint8_t LoRa_TransmitTelemetry_Blocking(LoRa_E220 *lora, uint32_t timeout) {
 
     // 4. Confirm the module actually accepted the packet: AUX should pulse LOW
     // within ~10 ms as the module loads its TX buffer.
+    lora->aux_low_ms = 0;
     uint32_t t = HAL_GetTick();
     while (HAL_GPIO_ReadPin(lora->auxPort, lora->auxPin) == GPIO_PIN_SET) {
         if (HAL_GetTick() - t > 50) return 5; // AUX never went LOW — module ignored data
     }
-    // Wait for AUX to return HIGH (RF transmission finished)
+    // Wait for AUX to return HIGH (RF transmission finished). How long it stays
+    // low is the only evidence from this side that the module actually keyed:
+    // buffering the bytes alone is over in a few ms, air time is much longer.
     t = HAL_GetTick();
     while (HAL_GPIO_ReadPin(lora->auxPort, lora->auxPin) == GPIO_PIN_RESET) {
-        if (HAL_GetTick() - t > 3000) return 6; // AUX stuck LOW — module hung
+        if (HAL_GetTick() - t > 3000) {
+            lora->aux_low_ms = HAL_GetTick() - t;
+            return 6; // AUX stuck LOW — module hung
+        }
     }
+    lora->aux_low_ms = HAL_GetTick() - t;
 
     return 0;
 }

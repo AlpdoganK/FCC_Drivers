@@ -1,5 +1,7 @@
 #include "app.h"
 #include "i2c.h"
+#include "rs232_loopback.h"
+#include "e220_diag.h"
 #include <math.h>
 #include <stdbool.h>
 #include <string.h>
@@ -71,7 +73,11 @@ const uint32_t imu_interval  = 10; // 100 Hz
 const uint32_t baro_interval = 50; // 20 Hz
 
 static uint32_t lora_last_tick = 0;
-const uint32_t  lora_interval  = 200;
+// 2 Hz. The radio, not the loop, sets the floor here: one 48-byte packet needs
+// ~160 ms of air time at the module's 2.4 kbps air rate, and
+// LoRa_TransmitTelemetry_Blocking waits for it. At the old 200 ms the queue
+// never drained and every send stalled the superloop for ~350 ms.
+const uint32_t  lora_interval  = 500;
 static uint8_t lorast = 0;
 
 
@@ -239,6 +245,49 @@ static LowPassFilter_t sut_lpf_angx, sut_lpf_angy, sut_lpf_angz;
 // an antenna fitted - it is both an EMC problem and a way to damage the PA.
 #define LORA_TX_ENABLED 1
 
+// ---- E220 configuration read-back (DIAGNOSTIC) ----------------------------
+// Set to 1 to have App_Init drop the module into configuration mode once and
+// print its stored registers (UART baud, air rate, output power, channel,
+// transparent vs fixed addressing) before any telemetry runs. Needs
+// DEBUG_PRINTS_ENABLED = 1 — the report comes out on USART2 at 9600.
+//
+// Worth doing whenever telemetry "succeeds" but nothing arrives: a clean AUX
+// handshake only proves the module took the bytes, not that it radiated them.
+// A module sitting in configuration mode, on the wrong channel, or at a UART
+// baud that does not match this firmware's 115200 all look identical from here.
+// Costs ~1 s of boot time and leaves the module back in transmission mode.
+#define E220_CONFIG_DIAG 0
+
+// Set to 1 for ONE boot to write the module's UART baud / air rate /
+// sub-packet size, then put it back to 0. The C0 command saves to the module's
+// own flash, so the settings survive power cycles and rewriting them every
+// boot only wears that flash and costs a second of startup.
+//
+// Applied 2026-07-29: REG0=0xE2 (115200 baud, 2.4 kbps air), REG1=0x02
+// (200 B sub-packet, 24 dBm). Before that the module was at 1200 baud with the
+// 0.3 kbps air rate, so it never decoded a single telemetry packet - see the
+// E220 notes in CLAUDE.md.
+#define E220_WRITE_CONFIG 0
+
+// ---- RS232 physical-layer loopback test (BENCH) ---------------------------
+// Replaces the entire flight firmware with a USART6 loopback/echo test, for
+// isolating a break in the MCU -> MAX3232 -> DB9 chain. See rs232_loopback.c
+// for the jumper position at each stage and how to read the results.
+//
+//   0 = normal firmware (FLIGHT POSITION)
+//   1 = self-test: board sends a byte pattern and checks it comes back.
+//       Requires a jumper at the stage under test.
+//   2 = echo: board mirrors back whatever the PC sends. NO jumper - with one
+//       fitted the board would echo its own echo forever.
+//
+// Non-zero skips sensor init, LoRa, the flight state machine and the UKB
+// protocol layer entirely: the circular DMA in UKB_RS232_Init() would consume
+// the bytes before the polled test could see them. Pyros are still initialised
+// to their safe state, but Pyro_ProcessTimeouts() is not needed since nothing
+// ever fires them here. Results print on USART2 at 9600, so this also needs
+// DEBUG_PRINTS_ENABLED = 1 in debug_uart.h.
+#define RS232_LOOPBACK_TEST 0
+
 // ---- I2C1 master switch (BENCH) -------------------------------------------
 // I2C1 (PB6 SCL / PB7 SDA) carries the MPU6050 and BME280 #1. Set to 0 to skip
 // that bus entirely: no bus recovery, no address scan, no sensor init, no
@@ -298,10 +347,20 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
               UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2, UART_HandleTypeDef *huart6) {
     
                 
+#if RS232_LOOPBACK_TEST
+    // Bench loopback test: bring up the pyros safe, then USART6 and nothing
+    // else. Skipping the sensors also skips the 3 s pyro delay and the 5 s
+    // per-failed-sensor waits, so the test starts talking immediately.
+    (void)hi2c1; (void)hi2c2; (void)huart1; (void)huart2; (void)huart6;
+    Pyro_Init();
+    RS232_Loopback_Init((RS232_LB_Mode)RS232_LOOPBACK_TEST);
+    return;
+#endif
+
     Pyro_Init();
     DBG_PRINT("Pyro Module Initialized\r\n");
     HAL_Delay(3000);
-    
+
 #if I2C1_ENABLED
     I2C_BusRecover(hi2c1, GPIOB, GPIO_PIN_6, GPIOB, GPIO_PIN_7);
 #else
@@ -432,6 +491,29 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     }
 
     LoRa_Init(&myLora, huart1, LORA_AUX_GPIO_Port, LORA_AUX_Pin);
+#if E220_CONFIG_DIAG
+    // Before any telemetry: ask the module what it thinks its settings are.
+    // Restores transmission mode and 115200 on the way out.
+#if E220_WRITE_CONFIG
+    // Restore the module to exactly the bytes it arrived with, read off it
+    // before anything was written: ADDH 7A, ADDL CD, NETID 00, REG0 E2
+    // (115200 baud 8N1, 2.4 kbps air), REG1 00 (240 B sub-packet, 30 dBm),
+    // REG2 37 (channel 55 = 905.125 MHz), REG3 40 (fixed-point transmission).
+    //
+    // That configuration was correct all along and matches this firmware:
+    // 115200 on USART1, and fixed-point mode is what makes the driver's
+    // leading 7B D3 2B meaningful as target address + channel. It was undone
+    // by writes aimed at an E220 register map, which on this module landed on
+    // NETID/REG0 and later wiped the channel.
+    //
+    // CRYPT_H/L (07/08) are deliberately not written - they are write-only and
+    // read back as 0, so their original value is unknowable.
+    static const uint8_t e22_restore[7] = { 0x7A, 0xCD, 0x00, 0xE2, 0x00, 0x37, 0x40 };
+    E220_Diag_WriteConfig(huart1, 0x00, e22_restore, sizeof(e22_restore));
+#endif
+    E220_Diag_ReadConfig(huart1);    // read back what the module is actually set to
+    E220_Diag_BurstTest(huart1, 500, 6);   // flight cadence
+#endif
     // GPS disabled: USART2 is repurposed as the debug console (see
     // debug_uart.c) and not needed alongside GPS at the same time.
     (void)huart2;
@@ -466,6 +548,11 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
 }
 
 void App_Run(void) {
+#if RS232_LOOPBACK_TEST
+    RS232_Loopback_Run();
+    return;
+#endif
+
     uint32_t current_time = HAL_GetTick();
     Pyro_ProcessTimeouts();
     // GPS disabled — see App_Init note; USART2 is the debug console now.
@@ -989,7 +1076,11 @@ void App_Run(void) {
             // 1=AUX busy  3=UART timeout  4=UART err  5=no AUX pulse(baud mismatch?)  6=AUX stuck
             DBG_PRINT("LoRa TX failed: code=%d\r\n", lorast);
         } else {
-            DBG_PRINT("LoRa TX OK\r\n");
+            // aux_low_ms is the only local evidence the module actually keyed:
+            // a few ms means it merely buffered the packet, air time for 48 B
+            // is tens to hundreds of ms depending on the air data rate.
+            DBG_PRINT("LoRa TX OK (aux low %lu ms)\r\n",
+                      (unsigned long)myLora.aux_low_ms);
         }
 
     }

@@ -85,14 +85,42 @@ def lerp(a, b, t):
 def build_profile():
     """(label, alt, ax, ay, az, angx, angy, angz) at 10 Hz.
 
-    Tuned against flight_sm.c's thresholds:
-      PAD  -> BOOST : ax > 24.5
-      BOOST-> COAST : ax < 2.0
+    Tuned against flight_sm.c's thresholds, where `lon` below is the value the
+    board treats as LONGITUDINAL after its own SUT remap:
+      PAD  -> BOOST : lon > 24.5 m/s^2
+      BOOST-> COAST : lon < 2.0 m/s^2
       COAST-> MINALT: alt > 500
-      MINALT->APOGEE: alt < peak-1.5  AND one of (net_g < 3.92, pitch < 45),
+      MINALT->APOGEE: alt < peak-1.5  AND one of (net_g < 3.92, pitch > 45),
                       sustained for DESCENT_CONFIRM (5) samples
       DESCENT->MAIN : alt < 800
       MAIN -> LANDED: alt steady within 0.5 m for 3 s
+
+    Three things here follow the REAL test device rather than EK-7, because
+    standing in for that device is this tool's whole job. All three were
+    measured on the wire; each names the app.c flag that encodes it.
+
+    1. ACCELERATIONS ARE m/s^2, exactly as Tablo 2/4 say (UKB_SUT_ACCEL_IN_G
+       is 0). This file used to send g, on the strength of a single packet
+       whose acceleration magnitude was 1.10 - read as "1 g". It was ~0.11 g
+       in m/s^2, sampled just after apogee, where a rocket in ballistic
+       descent genuinely is near-weightless. Never infer units from one sample
+       taken at an unknown flight phase.
+
+    2. THE LONGITUDINAL AXIS IS Z, not the X of EK-7 section 1.2
+       (UKB_SUT_SWAP_XZ is 1). The device puts thrust and drag on Z - +247
+       m/s^2 at boost, negative through the coast - and keeps X inside
+       +/-3 m/s^2 for an entire flight.
+
+    3. ANGLES ARE MEASURED FROM VERTICAL: 0 = nose up, 90 = horizontal,
+       180 = nose down. This file used to start at 90 on the pad and fall to
+       15 under parachute, i.e. inverted on both ends - asserting the rocket
+       lay horizontal on the pad and pointed nose-up while descending. That
+       latches GAA on the first sample and inverts the GAA/ATE order the
+       judges read, even where deployment itself is unaffected.
+
+    Combined, 1 and 2 meant the board was fed a 6.1 m/s^2 nudge on a lateral
+    axis and correctly concluded that nothing ever launched: every packet
+    valid, no checksum errors, not one status bit set.
     """
     S = []
 
@@ -100,26 +128,32 @@ def build_profile():
         for i in range(n):
             S.append((label,) + fn(i / max(n - 1, 1)))
 
-    # ACCELERATIONS ARE IN g, NOT m/s^2.
-    # EK-7's Tablo 2/4 say m/s^2. The real test device sends g - confirmed on
-    # the bench by decoding its own packets: at 2757.3 m and descending (so
-    # nowhere near weightless) it reported an acceleration magnitude of 1.10.
-    # The board converts on ingest (UKB_SUT_ACCEL_IN_G in app.c), so this
-    # simulator has to speak the same units or it exercises nothing real.
-    add(15, "PAD",    lambda t: (0.0, 1.00, 0.0, 0.0, 0.0, 90.0, 0.0))
-    # Boost: ~6 g, clears the 2.5 g (24.5 m/s^2) liftoff gate once converted.
-    add(20, "BOOST",  lambda t: (lerp(0, 400, t * t), 6.10, 0.05, 0.05, 0.0, 88.0, 0.0))
-    # Coast: motor out - 0.1 g converts to 0.98 m/s^2, under the 2.0 gate.
-    add(50, "COAST",  lambda t: (lerp(400, 2000, t), 0.10, 0.03, 0.03, 0.0,
-                                 lerp(85, 60, t), 0.0))
-    # Apogee dwell: flat top, so the peak is well established before descent.
-    add(5,  "APOGEE", lambda t: (2000.0, 0.05, 0.02, 0.03, 0.0, 55.0, 0.0))
-    # Descent: falling, near weightless, pitched over past 45 deg.
+    # Tuples below are (alt, lon, lat1, lat2, angx, angy, angz) with `lon` the
+    # longitudinal acceleration in m/s^2; the axis placement happens at the end.
+    #
+    # Pad: standing on its tail, so the longitudinal axis reads +1 g, nose up.
+    add(15, "PAD",    lambda t: (0.0, 9.81, 0.0, 0.0, 0.0, 0.0, 0.0))
+    # Boost: ~6 g, well clear of the 24.5 m/s^2 liftoff gate.
+    add(20, "BOOST",  lambda t: (lerp(0, 400, t * t), 60.0, 0.5, 0.5, 0.0, 2.0, 0.0))
+    # Coast: motor out, so drag DECELERATES and the longitudinal value goes
+    # negative - the real device does this too, and it trips the `< 2.0` gate
+    # the moment the motor quits rather than waiting for drag to decay.
+    add(50, "COAST",  lambda t: (lerp(400, 2000, t), lerp(-18.0, -0.6, t), 0.3, 0.3,
+                                 0.0, lerp(5.0, 35.0, t), 0.0))
+    # Apogee dwell: flat top so the peak is well established before descent,
+    # and the pitch-over crosses 45 deg here, so GAA latches before ATE.
+    add(5,  "APOGEE", lambda t: (2000.0, -0.5, 0.2, 0.3, 0.0, lerp(40.0, 50.0, t), 0.0))
+    # Descent: falling, near weightless, pitched well past 45 deg.
     # Passes 800 m on the way down, which is the main-chute gate.
-    add(80, "DESCENT", lambda t: (lerp(2000, 5, t), 0.05, 0.02, 0.03, 0.0, 20.0, 0.0))
+    add(80, "DESCENT", lambda t: (lerp(2000, 5, t), 0.5, 0.2, 0.3, 0.0,
+                                  lerp(60.0, 100.0, t), 0.0))
     # On the ground: altitude pinned so the 3 s stability timer can expire.
-    add(50, "LANDED", lambda t: (5.0, 0.05, 0.02, 0.03, 0.0, 15.0, 0.0))
-    return S
+    add(50, "LANDED", lambda t: (5.0, 9.81, 0.2, 0.3, 0.0, 90.0, 0.0))
+
+    # Place the longitudinal value on Z, where the real device puts it, and
+    # leave the two small lateral values on X and Y.
+    return [(label, alt, lat2, lat1, lon, angx, angy, angz)
+            for label, alt, lon, lat1, lat2, angx, angy, angz in S]
 
 
 def describe(bits, prev):
@@ -166,7 +200,8 @@ def run(port, baud, dry_run):
         last = None
         for label, alt, ax, ay, az, angx, angy, angz in profile:
             if label != last:
-                print(f"  {label:8} alt={alt:7.1f}  ax={ax:6.2f}  angY={angy:5.1f}")
+                # az is the longitudinal axis (see build_profile note 2).
+                print(f"  {label:8} alt={alt:7.1f}  az={az:7.2f}  angY={angy:5.1f}")
                 last = label
         return 0
 

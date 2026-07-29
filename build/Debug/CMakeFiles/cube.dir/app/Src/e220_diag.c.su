@@ -1,0 +1,10 @@
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:46:16:AuxWaitHigh	24	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:61:13:SetBaud	16	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:77:16:TryRead	40	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:121:17:TimedDummyTx	48	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:154:9:E220_Diag_WriteConfig	88	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:221:6:E220_Diag_BaudSweep	40	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:271:6:E220_Diag_TriggerTest	40	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:320:6:E220_Diag_BurstTest	48	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:376:6:E220_Diag_ModeSweep	32	static
+/home/alp/FCC_Drivers/app/Src/e220_diag.c:424:9:E220_Diag_ReadConfig	104	static
