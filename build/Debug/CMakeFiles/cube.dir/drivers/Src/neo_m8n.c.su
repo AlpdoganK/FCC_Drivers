@@ -4,5 +4,7 @@
 /home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:73:14:NmeaToDecimalDegrees	24	static
 /home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:82:13:ParseGGA	112	static
 /home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:131:6:NEO_M8N_Init	16	static
-/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:152:6:NEO_M8N_Process	112	static
-/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:163:6:NEO_M8N_RxCpltCallback	24	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:152:6:NEO_M8N_EnableSurvey	16	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:157:6:NEO_M8N_SurveyFeed	224	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:224:6:NEO_M8N_Process	112	static
+/home/alp/FCC_Drivers/drivers/Src/neo_m8n.c:235:6:NEO_M8N_RxCpltCallback	24	static

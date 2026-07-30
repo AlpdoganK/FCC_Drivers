@@ -149,6 +149,78 @@ void NEO_M8N_Init(NEO_M8N *dev, UART_HandleTypeDef *huart)
     HAL_UART_Receive_IT(dev->uartHandle, &dev->rx_byte, 1);
 }
 
+void NEO_M8N_EnableSurvey(NEO_M8N *dev)
+{
+    UBX_SetNmeaRate(dev->uartHandle, NMEA_ID_GSV, 1);
+}
+
+bool NEO_M8N_SurveyFeed(NEO_M8N_Survey *survey, const char *line)
+{
+    if (line[0] != '$' || strncmp(line + 3, "GSV", 3) != 0) return false;
+
+    // Work on a copy: the in-place comma splitting below would otherwise
+    // destroy the caller's line before NEO_M8N_Process gets to see it.
+    char buf[NEO_M8N_LINE_BUF_SIZE];
+    strncpy(buf, line, sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+
+    char *star = strchr(buf, '*');
+    if (!star) return true;
+
+    uint8_t checksum = 0;
+    for (char *p = buf + 1; p < star; p++) checksum ^= (uint8_t)*p;
+    if (checksum != (uint8_t)strtol(star + 1, NULL, 16)) return true;
+    *star = '\0';
+
+    // $xxGSV,numMsg,msgNum,numSV,{prn,elev,azim,snr} x up to 4
+    // Blank snr means the satellite is seen in the almanac but not tracked.
+    char *fields[20] = { 0 };
+    int   nfields = 0;
+
+    char *comma = strchr(buf, ',');
+    if (!comma) return true;
+    char *cursor = comma + 1;
+
+    while (nfields < 20) {
+        fields[nfields++] = cursor;
+        comma = strchr(cursor, ',');
+        if (!comma) break;
+        *comma = '\0';
+        cursor = comma + 1;
+    }
+    if (nfields < 3) return true;
+
+    survey->sentences++;
+
+    // GP and GL constellations each run their own numbering, so a msgNum of 1
+    // is the only cycle boundary available. The per-cycle counters reset there
+    // and the high-water marks below survive it.
+    static uint8_t cycle_with_snr = 0;
+    static uint8_t cycle_max_snr  = 0;
+
+    if (strtol(fields[1], NULL, 10) == 1) {
+        survey->sats_with_snr = cycle_with_snr > survey->sats_with_snr
+                                ? cycle_with_snr : survey->sats_with_snr;
+        survey->last_snr = cycle_max_snr;
+        cycle_with_snr = 0;
+        cycle_max_snr  = 0;
+    }
+
+    uint8_t in_view = (uint8_t)strtol(fields[2], NULL, 10);
+    if (in_view > survey->sats_in_view) survey->sats_in_view = in_view;
+
+    for (int i = 6; i < nfields; i += 4) { // field[6] is the first snr
+        if (fields[i][0] == '\0') continue;
+        uint8_t snr = (uint8_t)strtol(fields[i], NULL, 10);
+        if (snr == 0) continue;
+        cycle_with_snr++;
+        if (snr > cycle_max_snr)       cycle_max_snr  = snr;
+        if (snr > survey->max_snr)     survey->max_snr = snr;
+    }
+
+    return true;
+}
+
 void NEO_M8N_Process(NEO_M8N *dev)
 {
     if (!dev->line_ready) return;

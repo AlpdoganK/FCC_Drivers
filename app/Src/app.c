@@ -59,6 +59,30 @@ static BME280 baro1;
 static BME280 baro2;
 static LoRa_E220 myLora;
 static NEO_M8N myGPS;
+
+// GPS bring-up diagnostics, latched for SWD — there is no console while the
+// GPS owns USART2, so these are the only way to tell the three failure modes
+// apart. Read them with the ELF's symbol table (`arm-none-eabi-nm`), the
+// addresses move on every rebuild:
+//
+//   gps_rx_bytes == 0        nothing on the wire at all — module unpowered,
+//                            TX/RX swapped, or wrong baud (module default is
+//                            9600, matching MX_USART2_UART_Init)
+//   bytes climb, lines == 0  bytes arriving but no '\n' framing — almost
+//                            always a baud mismatch producing garbage
+//   lines climb, sats == 0   link is fine, the receiver simply sees no
+//                            satellites: sky view, antenna, or desense
+//   sats climb, fix == 0     acquiring normally, just not done yet
+//
+// gps_last_line holds the most recent complete NMEA sentence verbatim, so a
+// memory view of it shows the raw $GxGGA and settles all of the above at once.
+static volatile uint32_t gps_rx_bytes    = 0; // bytes taken by the RX ISR
+static uint32_t          gps_lines       = 0; // complete NMEA sentences parsed
+static uint32_t          gps_rx_restarts = 0; // watchdog re-arms of Receive_IT
+static uint8_t           gps_max_sats    = 0; // high-water mark, survives fix loss
+static char              gps_last_line[NEO_M8N_LINE_BUF_SIZE]; // last non-GSV sentence
+// The survey buffers live further down, next to the GPS_SURVEY_MODE flag that
+// guards them — the config flags are all defined below this point.
 static SensorStats_t baro1_stats;
 static SensorStats_t baro2_stats;
 static BaroHealth_t  avionics_health;
@@ -73,11 +97,17 @@ const uint32_t imu_interval  = 10; // 100 Hz
 const uint32_t baro_interval = 50; // 20 Hz
 
 static uint32_t lora_last_tick = 0;
-// 2 Hz. The radio, not the loop, sets the floor here: one 48-byte packet needs
+// 1 Hz. The radio, not the loop, sets the floor here: one 48-byte packet needs
 // ~160 ms of air time at the module's 2.4 kbps air rate, and
 // LoRa_TransmitTelemetry_Blocking waits for it. At the old 200 ms the queue
 // never drained and every send stalled the superloop for ~350 ms.
-const uint32_t  lora_interval  = 500;
+//
+// Dropped from 500 to 1000 ms to halve the PA duty cycle (~32% -> ~16% at
+// 30 dBm, REG1 = 0x00) and with it the average current draw. Raising the
+// module's air data rate would be the cheaper saving — it shortens the
+// transmit itself rather than the telemetry rate — but that needs a config
+// write, so it is not done here.
+const uint32_t  lora_interval  = 1000;
 static uint8_t lorast = 0;
 
 
@@ -243,7 +273,29 @@ static LowPassFilter_t sut_lpf_angx, sut_lpf_angy, sut_lpf_angz;
 // framing errors). An unterminated PA reflects its output and radiates from
 // the module and traces instead of the antenna. Never key this module without
 // an antenna fitted - it is both an EMC problem and a way to damage the PA.
-#define LORA_TX_ENABLED 1
+#define LORA_TX_ENABLED 0
+
+// ---- Onboard LED (PC13) ---------------------------------------------------
+// CubeMX configures PC13 as a plain push-pull output (see MX_GPIO_Init in
+// Core/Src/gpio.c) but never gives it a user label, so it is named here rather
+// than in main.h — anything added to main.h outside a USER CODE block is lost
+// the next time cube.ioc is regenerated.
+//
+// LED_ACTIVE_LOW reflects the usual F411 wiring, where the LED anode sits on
+// 3V3 through a resistor and PC13 sinks it, so driving the pin LOW lights it.
+// If the LED turns out to be lit whenever the radio is NOT transmitting, this
+// board wires it the other way round — set this to 0 and rebuild.
+#define LED_GPIO_Port   GPIOC
+#define LED_Pin         GPIO_PIN_13
+#define LED_ACTIVE_LOW  1
+
+#if LED_ACTIVE_LOW
+#define LED_On()  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET)
+#define LED_Off() HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET)
+#else
+#define LED_On()  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET)
+#define LED_Off() HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET)
+#endif
 
 // ---- E220 configuration read-back (DIAGNOSTIC) ----------------------------
 // Set to 1 to have App_Init drop the module into configuration mode once and
@@ -310,6 +362,62 @@ static LowPassFilter_t sut_lpf_angx, sut_lpf_angy, sut_lpf_angz;
 // state machine is running on barometric data alone.
 #define I2C1_ENABLED 1
 
+// GPS on USART2 (PA2/PA3). Mutually exclusive with the debug console, which
+// uses the same UART — the module's TX drives PA3, so a USB-serial adapter
+// cannot be attached at the same time without both ends fighting over the pin.
+// With GPS_ENABLED = 1, keep DEBUG_PRINTS_ENABLED at 0: printf would otherwise
+// go out PA2 straight into the module's RX input, and there is nothing on the
+// other end to read it anyway.
+//
+// Observation while this is 1 is via LoRa (gps_lat/gps_lon in the telemetry
+// packet) and via SWD on the gps_* diagnostic counters below.
+//
+// Currently 0 so USART2 is the debug console instead — the GPS module tracks
+// 12 satellites at 40 dB-Hz but never solves a fix, so there is nothing to be
+// gained from leaving it in the loop while other things are being looked at.
+// The telemetry packet ships 0.0 for gps_lat/gps_lon in this position.
+#define GPS_ENABLED 0
+
+// GPS bring-up survey: re-enables GSV so the C/N0 of every visible satellite
+// can be read over SWD. Diagnostic only — set back to 0 for flight, it roughly
+// quadruples the GPS byte rate for data the flight code never reads.
+#define GPS_SURVEY_MODE 0
+
+// ---- IMU bench check (DIAGNOSTIC) -----------------------------------------
+// Replaces the once-per-second status block with a compact accel/angle line at
+// IMU_BENCH_INTERVAL_MS, for checking the IMU by hand: sit the board in a known
+// orientation, wait ~1 s for the complementary filter to settle, read the line.
+// App_Init prints the expected values for each orientation once at boot.
+//
+// It REPLACES rather than adds to the status block on purpose. The full block
+// is ~280 characters, which at 9600 baud blocks the superloop ~290 ms; adding a
+// 4 Hz line on top would spend most of a second in _write and starve the 100 Hz
+// IMU sampling the check is trying to evaluate.
+//
+// SET BACK TO 0 AFTER BENCH TESTING — it hides every other status line
+// (baro, RS232, LoRa, flight state).
+#define IMU_BENCH_MODE 0
+
+// 4 Hz. The line is ~66 characters, i.e. ~69 ms of blocking write at 9600 baud,
+// so this already spends ~28% of the loop in printf. Going much faster starts
+// displacing the IMU samples themselves.
+#define IMU_BENCH_INTERVAL_MS 250u
+
+// Below this the board is treated as stationary and the gyro line is skipped,
+// which keeps the static case — the one you actually read numbers off — cheap.
+#define IMU_BENCH_GYRO_THRESH 5.0f  // deg/s
+
+#if GPS_SURVEY_MODE
+// One GSV cycle is up to 4 sentences per constellation; the ring keeps the most
+// recent few verbatim so the raw per-satellite PRN/elevation/azimuth/C/N0
+// quadruples can be read straight out of memory when the summary counters are
+// ambiguous. gps_survey holds the parsed summary — read that first.
+#define GPS_GSV_RING 6
+static NEO_M8N_Survey gps_survey;
+static char           gps_gsv_lines[GPS_GSV_RING][NEO_M8N_LINE_BUF_SIZE];
+static uint8_t        gps_gsv_idx = 0;
+#endif
+
 #if RS232_HB_MODE == RS232_HB_UPATT
 const uint32_t  rs232_hb_interval = 100;  // 10 Hz — near-continuous stream
 #else
@@ -336,7 +444,28 @@ float rocket_pitch    = 0.0f;
 float rocket_roll     = 0.0f;
 float rocket_yaw      = 0.0f;
 float rocket_altitude = 0.0f;
-float sea_level_pressure = 1013.25f;
+
+// One barometric reference PER SENSOR, not one shared between them.
+//
+// The two BME280s disagree by their absolute-accuracy spec — measured at
+// 2.14 hPa on this board, which at ~916 hPa is 2.14 x 9.21 = ~19.7 m, since
+// dh/dP = 44330 * 0.190295 / P. A single pooled reference lands midway, so
+// each sensor reads half that offset with the opposite sign (+9.6 m and
+// -10.1 m on a stationary bench) even though neither is faulty.
+//
+// That is not just cosmetic. BARO_DISAGREE_THRESH is 25 m, so a constant
+// 19.7 m spends 79% of the fault-detection budget before the rocket moves;
+// a few more metres of divergence in flight latches a sensor off for good
+// (baro_fusion.c), and the tiebreak is by variance, which can just as easily
+// pick the healthy one — the sensor actually tracking the flight is the
+// noisier of the two.
+//
+// Referencing each sensor to its own pad pressure zeroes both on the ground
+// and leaves the whole 25 m threshold available to measure real divergence.
+// It cannot mask a failing sensor: the calibration happens once, at a known
+// altitude, and any drift after that still shows up as disagreement.
+float sea_level_pressure1 = 1013.25f;
+float sea_level_pressure2 = 1013.25f;
 
 // IMU data — module-scope so FlightSM_Update can see them
 static float ax = 0.0f, ay = 0.0f, az = 0.0f;
@@ -345,8 +474,12 @@ static float gz = 0.0f;
 
 void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
               UART_HandleTypeDef *huart1, UART_HandleTypeDef *huart2, UART_HandleTypeDef *huart6) {
-    
-                
+
+    // MX_GPIO_Init drives PC13 LOW, which on the active-low wiring leaves the
+    // LED solidly lit from reset. Park it off here so the only thing that ever
+    // lights it is a LoRa transmit.
+    LED_Off();
+
 #if RS232_LOOPBACK_TEST
     // Bench loopback test: bring up the pyros safe, then USART6 and nothing
     // else. Skipping the sensors also skips the 3 s pyro delay and the 5 s
@@ -413,6 +546,22 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     }
 #endif /* I2C1_ENABLED */
 
+#if IMU_BENCH_MODE
+    // Reference table, printed once so the bench check needs no notes.
+    // "Up" means the axis points at the sky; the MPU6050 reads specific force,
+    // so whichever axis is up reads +9.81 and the other two read ~0. X is the
+    // nose, Y the lateral pitch axis, Z the remaining lateral axis.
+    DBG_PRINT("\r\n--- IMU bench check ---\r\n");
+    DBG_PRINT("Hold each orientation ~1 s (complementary filter tau = 0.19 s).\r\n");
+    DBG_PRINT("orientation        ax     ay     az    pitch   roll\r\n");
+    DBG_PRINT("nose UP         +9.81   0.00   0.00     0.0    0.0\r\n");
+    DBG_PRINT("flat, Z up       0.00   0.00  +9.81    90.0    0.0\r\n");
+    DBG_PRINT("nose DOWN       -9.81   0.00   0.00   180.0    0.0\r\n");
+    DBG_PRINT("flat, rolled 90  0.00  +9.81   0.00    90.0   90.0\r\n");
+    DBG_PRINT("flat, inverted   0.00   0.00  -9.81    90.0  180.0\r\n");
+    DBG_PRINT("|a| must read 1.000g in EVERY orientation.\r\n\r\n");
+#endif
+
     // 2. Initialize Dual Independent BME280s across different I2C lines
     BME280_Config baroConfig = {
         .temp_osr = BME280_OVERSAMPLING_1X,
@@ -448,10 +597,12 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
         DBG_PRINT("BME280 #2 OK\r\n");
     }
 
-    // 2b. Calibrate the barometric reference against pad pressure.
-    // Altitude is computed from sea_level_pressure in App_Run; the formula's
-    // altitude==0 solution is simply P0 == P_pad, so averaging pad pressure
-    // into the reference makes altitude read ~0 m on the ground (AGL).
+    // 2b. Calibrate a barometric reference PER SENSOR against pad pressure.
+    // Altitude is computed from these in App_Run; the formula's altitude==0
+    // solution is simply P0 == P_pad, so referencing each sensor to its own
+    // averaged pad pressure makes BOTH read ~0 m on the ground (AGL) instead
+    // of straddling zero by half their mutual offset. See the note on
+    // sea_level_pressure1/2 above for why sharing one reference is harmful.
     // Left at the 1013.25 hPa standard atmosphere, every altitude carries the
     // day's QNH error — enough to sit below the test software's 0-10000 m
     // window on a high-pressure day (EK-15) and to shift the 800 m main-chute
@@ -463,28 +614,52 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
             HAL_Delay(20);
         }
 
-        float    sum = 0.0f;
-        uint16_t n   = 0;
+        float    sum1 = 0.0f, sum2 = 0.0f;
+        uint16_t n1   = 0,    n2   = 0;
         for (uint8_t i = 0; i < BARO_CAL_SAMPLES; i++) {
             if (b1_err == 0 && BME280_ReadAll(&baro1) == HAL_OK) {
-                sum += baro1.pressure_hPa; n++;
+                sum1 += baro1.pressure_hPa; n1++;
             }
             if (b2_err == 0 && BME280_ReadAll(&baro2) == HAL_OK) {
-                sum += baro2.pressure_hPa; n++;
+                sum2 += baro2.pressure_hPa; n2++;
             }
             HAL_Delay(20);
         }
 
-        // Gate the result: a wild reading accepted here would silently bias
-        // every altitude — and therefore every deploy decision — for the
-        // whole flight. Better to fall back to the standard atmosphere.
-        float mean = (n > 0) ? (sum / (float)n) : 0.0f;
-        if (n > 0 && mean >= BARO_CAL_MIN_HPA && mean <= BARO_CAL_MAX_HPA) {
-            sea_level_pressure = mean;
-            DBG_PRINT("Baro reference calibrated to %.2f hPa (%u samples)\r\n", mean, n);
-        } else {
-            DBG_PRINT("Baro calibration rejected (mean=%.2f hPa n=%u), keeping %.2f hPa\r\n",
-                      mean, n, sea_level_pressure);
+        // Gate each result independently: a wild reading accepted here would
+        // silently bias every altitude — and therefore every deploy decision —
+        // for the whole flight.
+        float   mean1 = (n1 > 0) ? (sum1 / (float)n1) : 0.0f;
+        float   mean2 = (n2 > 0) ? (sum2 / (float)n2) : 0.0f;
+        uint8_t ok1   = (n1 > 0 && mean1 >= BARO_CAL_MIN_HPA && mean1 <= BARO_CAL_MAX_HPA);
+        uint8_t ok2   = (n2 > 0 && mean2 >= BARO_CAL_MIN_HPA && mean2 <= BARO_CAL_MAX_HPA);
+
+        if (ok1) sea_level_pressure1 = mean1;
+        if (ok2) sea_level_pressure2 = mean2;
+
+        // If only one sensor produced a sane reference, hand it to the other
+        // as well. The two sit centimetres apart, so the working sensor's pad
+        // pressure is a far better estimate of the failed one's reference than
+        // the 1013.25 hPa standard atmosphere — which on this board would be
+        // ~97 hPa out, i.e. roughly 900 m of instant bias and a guaranteed
+        // BARO_DISAGREE_THRESH trip on the first fused sample.
+        if (!ok1 && ok2) sea_level_pressure1 = mean2;
+        if (!ok2 && ok1) sea_level_pressure2 = mean1;
+
+        DBG_PRINT("Baro ref 1: %s %.2f hPa (%u samples)\r\n",
+                  ok1 ? "calibrated to" : "REJECTED, using", sea_level_pressure1, n1);
+        DBG_PRINT("Baro ref 2: %s %.2f hPa (%u samples)\r\n",
+                  ok2 ? "calibrated to" : "REJECTED, using", sea_level_pressure2, n2);
+        if (ok1 && ok2) {
+            // Sensor-to-sensor offset, reported in metres because that is the
+            // unit BARO_DISAGREE_THRESH (25 m) is expressed in. Anything much
+            // above a few metres here is worth investigating before flight —
+            // it is the part of the disagreement budget that is NOT available
+            // to detect a real fault, since per-sensor referencing only
+            // removes the offset that exists at pad temperature.
+            DBG_PRINT("Baro offset: %.2f hPa (~%.1f m at pad)\r\n",
+                      mean2 - mean1,
+                      (mean2 - mean1) * (44330.0f * 0.1902949f / mean1));
         }
     } else {
         DBG_PRINT("Baro calibration skipped: no healthy barometer\r\n");
@@ -514,9 +689,18 @@ void App_Init(I2C_HandleTypeDef *hi2c1, I2C_HandleTypeDef *hi2c2,
     E220_Diag_ReadConfig(huart1);    // read back what the module is actually set to
     E220_Diag_BurstTest(huart1, 500, 6);   // flight cadence
 #endif
-    // GPS disabled: USART2 is repurposed as the debug console (see
-    // debug_uart.c) and not needed alongside GPS at the same time.
+#if GPS_ENABLED
+    // Blocking: ~10 UBX config writes at 9600 baud, each with a 100 ms
+    // transmit timeout. Arms HAL_UART_Receive_IT on the way out.
+    NEO_M8N_Init(&myGPS, huart2);
+#if GPS_SURVEY_MODE
+    NEO_M8N_EnableSurvey(&myGPS);
+#endif
+#else
+    // USART2 is repurposed as the debug console (see debug_uart.c) and not
+    // needed alongside GPS at the same time.
     (void)huart2;
+#endif
     (void)huart6; // UKB_RS232_Init() below talks to huart6 directly
     UKB_RS232_Init();
 
@@ -555,7 +739,45 @@ void App_Run(void) {
 
     uint32_t current_time = HAL_GetTick();
     Pyro_ProcessTimeouts();
-    // GPS disabled — see App_Init note; USART2 is the debug console now.
+
+#if GPS_ENABLED
+    // Snapshot the assembled sentence before NEO_M8N_Process consumes it —
+    // it clears line_ready and the ISR then overwrites line_buf.
+    if (myGPS.line_ready) {
+        gps_lines++;
+#if GPS_SURVEY_MODE
+        // GSV sentences go to the survey ring so they don't displace the GGA
+        // in gps_last_line — with survey on they outnumber it 4:1 or worse.
+        if (NEO_M8N_SurveyFeed(&gps_survey, myGPS.line_buf)) {
+            memcpy(gps_gsv_lines[gps_gsv_idx], myGPS.line_buf,
+                   NEO_M8N_LINE_BUF_SIZE);
+            gps_gsv_lines[gps_gsv_idx][NEO_M8N_LINE_BUF_SIZE - 1] = '\0';
+            gps_gsv_idx = (uint8_t)((gps_gsv_idx + 1) % GPS_GSV_RING);
+        } else
+#endif
+        {
+            memcpy(gps_last_line, myGPS.line_buf, sizeof(gps_last_line));
+            gps_last_line[sizeof(gps_last_line) - 1] = '\0';
+        }
+    }
+    NEO_M8N_Process(&myGPS);
+    if (myGPS.satellites > gps_max_sats) gps_max_sats = myGPS.satellites;
+
+    // Re-arm watchdog. In interrupt mode the F4 HAL calls UART_EndRxTransfer
+    // on any ORE/FE/NE, which disables the RXNE interrupt and drops RxState
+    // back to READY — nothing re-arms it, so a single line transient would
+    // otherwise deafen the GPS permanently for the rest of the flight. The
+    // shared HAL_UART_ErrorCallback in rs232.c early-returns for anything that
+    // is not USART6 and is deliberately left that way, so recovery is polled
+    // here instead. Cost of a re-arm is at most one lost NMEA sentence out of
+    // the 5 Hz stream. HAL_UART_Receive_IT is a no-op returning HAL_BUSY when
+    // reception is already armed, so this is safe to evaluate every iteration.
+    if (myGPS.uartHandle != NULL
+        && myGPS.uartHandle->RxState != HAL_UART_STATE_BUSY_RX) {
+        gps_rx_restarts++;
+        HAL_UART_Receive_IT(myGPS.uartHandle, &myGPS.rx_byte, 1);
+    }
+#endif
 
     // ====================================================================
     // PHASE 0: RS232 GROUND-TEST COMMAND HANDLING (USART6)
@@ -867,13 +1089,13 @@ void App_Run(void) {
 
     if (baro1.freshData && !SUT_ENGAGED) {
         baro1.freshData = false;
-        alt1 = 44330.0f * (1.0f - powf((baro1.pressure_hPa / sea_level_pressure), 0.1902949f));
+        alt1 = 44330.0f * (1.0f - powf((baro1.pressure_hPa / sea_level_pressure1), 0.1902949f));
         process_fusion = true;
     }
 
     if (baro2.freshData && !SUT_ENGAGED) {
         baro2.freshData = false;
-        alt2 = 44330.0f * (1.0f - powf((baro2.pressure_hPa / sea_level_pressure), 0.1902949f));
+        alt2 = 44330.0f * (1.0f - powf((baro2.pressure_hPa / sea_level_pressure2), 0.1902949f));
         process_fusion = true;
     }
 
@@ -1040,10 +1262,52 @@ void App_Run(void) {
         myLora.packet.gps_lat      = myGPS.latitude_deg;
         myLora.packet.gps_lon      = myGPS.longitude_deg;
 
+        // TX indicator. Held for the duration of the blocking transmit rather
+        // than for a fixed time, so it costs no extra superloop time at all and
+        // the on-time IS the air time: a solid ~160 ms pulse once a second means
+        // the module really keyed, while a brief flicker (~50 ms) is
+        // LoRa_TransmitTelemetry_Blocking bailing out at the "no AUX pulse"
+        // timeout, i.e. no module or a module that ignored the packet.
+        LED_On();
         lorast = LoRa_TransmitTelemetry_Blocking(&myLora, 200);
+        LED_Off();
     }
 #endif /* LORA_TX_ENABLED */
 
+#if IMU_BENCH_MODE
+    // Function-static rather than module-scope: IMU_BENCH_MODE is defined well
+    // below the other tick counters, so a declaration up there could not be
+    // guarded by it and would warn as unused in every normal build.
+    static uint32_t imu_bench_last_tick = 0;
+
+    if (current_time - imu_bench_last_tick >= IMU_BENCH_INTERVAL_MS) {
+        imu_bench_last_tick = current_time;
+
+        // |a| is the single most useful number here. At rest it must read
+        // 1.000 g in every orientation, because gravity does not care how the
+        // board is held — so it tests scale and bias on all three axes at once,
+        // which eyeballing the individual axes cannot do. A magnitude that
+        // changes with orientation means a per-axis scale or offset error;
+        // one that is consistently off by the same factor means the full-scale
+        // setting and the conversion constant disagree.
+        float amag = sqrtf(ax * ax + ay * ay + az * az);
+
+        DBG_PRINT("ax=%+6.2f ay=%+6.2f az=%+6.2f |a|=%.3fg pitch=%+6.1f roll=%+6.1f\r\n",
+                  ax, ay, az, amag / 9.80665f, rocket_pitch, rocket_roll);
+
+        // Only while actually turning: keeps the static case cheap, and the
+        // rates are what confirm gyro polarity matches the angle convention.
+        // Rotating nose-up towards horizontal should show gy positive, since
+        // that is the direction of increasing pitch.
+        float gx_now = myMPU6050.gyro[0];
+        if (fabsf(gx_now) > IMU_BENCH_GYRO_THRESH
+            || fabsf(gy) > IMU_BENCH_GYRO_THRESH
+            || fabsf(gz) > IMU_BENCH_GYRO_THRESH) {
+            DBG_PRINT("   turning: gx=%+7.1f gy=%+7.1f gz=%+7.1f deg/s\r\n",
+                      gx_now, gy, gz);
+        }
+    }
+#else
     if (current_time - print_last_tick >= 1000) {
         print_last_tick = current_time;
 
@@ -1061,6 +1325,25 @@ void App_Run(void) {
                   (unsigned)FlightSM_GetStatusBits(),
                   sut_pressure_mbar, sutst,
                   sut_data_stale ? "  [DATA STALE]" : "");
+
+#if GPS_ENABLED
+        DBG_PRINT("GPS: bytes=%lu lines=%lu restarts=%lu fix=%u sats=%u(max %u) "
+                  "lat=%.5f lon=%.5f alt=%.1f m\r\n",
+                  (unsigned long)gps_rx_bytes, (unsigned long)gps_lines,
+                  (unsigned long)gps_rx_restarts,
+                  (unsigned)myGPS.fix_quality, (unsigned)myGPS.satellites,
+                  (unsigned)gps_max_sats,
+                  myGPS.latitude_deg, myGPS.longitude_deg, myGPS.altitude_m);
+#if GPS_SURVEY_MODE
+        DBG_PRINT("GPS survey: gsv=%lu in_view=%u tracked=%u snr_max=%u "
+                  "snr_now=%u\r\n",
+                  (unsigned long)gps_survey.sentences,
+                  (unsigned)gps_survey.sats_in_view,
+                  (unsigned)gps_survey.sats_with_snr,
+                  (unsigned)gps_survey.max_snr,
+                  (unsigned)gps_survey.last_snr);
+#endif
+#endif
 
         DBG_PRINT("IMU: ax=%.2f ay=%.2f az=%.2f gy=%.2f pitch=%.1f roll=%.1f\r\n",
                   ax, ay, az, gy, rocket_pitch, rocket_roll);
@@ -1084,6 +1367,7 @@ void App_Run(void) {
         }
 
     }
+#endif /* IMU_BENCH_MODE */
 
 }
 
@@ -1091,6 +1375,12 @@ void App_Run(void) {
 // (currently just USART2 / GPS). Re-arming for the next byte is handled inside
 // NEO_M8N_RxCpltCallback itself.
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+#if GPS_ENABLED
+    // Counted before the driver runs: this must tick even if line assembly
+    // never completes a sentence, since "bytes but no lines" is the signature
+    // of a baud mismatch.
+    if (huart->Instance == USART2) gps_rx_bytes++;
+#endif
     NEO_M8N_RxCpltCallback(&myGPS, huart);
 }
 

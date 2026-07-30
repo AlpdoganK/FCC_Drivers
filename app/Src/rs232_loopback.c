@@ -66,6 +66,26 @@ uint32_t rs232_lb_rounds_fail;
 uint8_t  rs232_lb_last_rx[PATTERN_LEN];
 uint32_t rs232_lb_last_sr[PATTERN_LEN];
 
+/* Text-phase result, also latched for SWD. BinaryPatternCheck only runs when
+ * the text phase passes completely, so on a failing link rs232_lb_last_rx/_sr
+ * above are never written and stay at their BSS zeros - which is silence, not
+ * evidence. These four are the ones that tell a FAILING link apart:
+ *
+ *   returned == 0            open circuit: no jumper, wrong pins, or a dead
+ *                            charge pump leaving T1OUT unable to drive
+ *   returned == len,
+ *     correct < len          the loop is closed and bytes are flowing, but
+ *                            levels/timing are marginal - check first_sr
+ *   0 < returned < len       intermittent, usually slew rate at 115200
+ *
+ * first_sr is the USART SR captured at the first byte that did not round-trip
+ * correctly, so FE/NE/ORE is readable without the console. */
+uint32_t rs232_lb_last_returned;
+uint32_t rs232_lb_last_correct;
+uint32_t rs232_lb_last_len;
+uint32_t rs232_lb_last_first_sr;
+char     rs232_lb_last_back[LB_MSG_MAX];
+
 /* Drain and clear any stale byte or sticky error flag. On F4 the ORE/FE/NE/PE
  * flags clear on a read of SR followed by a read of DR, in that order. */
 static void Usart6_Flush(void)
@@ -215,6 +235,19 @@ static void RS232_Loopback_SelfTest(void)
         if (okb[i])  { n_correct++;  }
     }
     back[len] = '\0';
+
+    /* Latch before any early return, so a failing round is just as readable
+     * over SWD as a passing one. */
+    rs232_lb_last_returned = n_returned;
+    rs232_lb_last_correct  = n_correct;
+    rs232_lb_last_len      = len;
+    rs232_lb_last_first_sr = 0u;
+    for (uint16_t i = 0; i < len; i++) {
+        if (!okb[i]) { rs232_lb_last_first_sr = sr[i]; break; }
+    }
+    for (uint16_t i = 0; i < LB_MSG_MAX; i++) {
+        rs232_lb_last_back[i] = (i <= len) ? back[i] : '\0';
+    }
 
     if (n_returned == 0u) {
         rs232_lb_rounds_fail++;
