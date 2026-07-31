@@ -21,11 +21,21 @@ typedef struct __attribute__((__packed__)) {
     float    ax;             // Acceleration X (m/s^2)
     float    ay;             // Acceleration Y (m/s^2)
     float    az;             // Acceleration Z (m/s^2)
-    float    gy;             // Gyro Yaw Rate (degrees/s)
-    float    pitch;          // Pitch Angle (degrees)
 
-    float    baro_alt_raw;
-    float    baro_alt;       // Barometric altitude in meters
+    // Body rates straight off the MPU6050, in the same axis order as the accel
+    // triplet above. Note gy is the PITCH rate (gyro[1]) — it was labelled
+    // "Yaw Rate" here while app.c has always fed it gyro[1], and it is the one
+    // FlightSM_Update consumes, so the label was the thing that was wrong.
+    float    gx;             // Gyro Roll Rate  (degrees/s)
+    float    gy;             // Gyro Pitch Rate (degrees/s)
+    float    gz;             // Gyro Yaw Rate   (degrees/s)
+
+    // Complementary-filtered attitude. pitch is measured FROM VERTICAL:
+    // 0 = nose up, 90 = horizontal, 180 = nose down (see app.c).
+    float    pitch;          // Pitch Angle (degrees)
+    float    roll;           // Roll Angle  (degrees)
+
+    float    baro_alt;       // Barometric altitude in meters (fused)
     float    gps_lat;        // Raw Latitude from secondary parser
     float    gps_lon;        // Raw Longitude from secondary parser
     uint16_t crc;            // CRC-16 for error checking

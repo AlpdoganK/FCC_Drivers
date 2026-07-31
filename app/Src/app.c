@@ -273,7 +273,7 @@ static LowPassFilter_t sut_lpf_angx, sut_lpf_angy, sut_lpf_angz;
 // framing errors). An unterminated PA reflects its output and radiates from
 // the module and traces instead of the antenna. Never key this module without
 // an antenna fitted - it is both an EMC problem and a way to damage the PA.
-#define LORA_TX_ENABLED 0
+#define LORA_TX_ENABLED 1
 
 // ---- Onboard LED (PC13) ---------------------------------------------------
 // CubeMX configures PC13 as a plain push-pull output (see MX_GPIO_Init in
@@ -372,11 +372,13 @@ static LowPassFilter_t sut_lpf_angx, sut_lpf_angy, sut_lpf_angz;
 // Observation while this is 1 is via LoRa (gps_lat/gps_lon in the telemetry
 // packet) and via SWD on the gps_* diagnostic counters below.
 //
-// Currently 0 so USART2 is the debug console instead — the GPS module tracks
-// 12 satellites at 40 dB-Hz but never solves a fix, so there is nothing to be
-// gained from leaving it in the loop while other things are being looked at.
-// The telemetry packet ships 0.0 for gps_lat/gps_lon in this position.
-#define GPS_ENABLED 0
+// Back to 1 (flight position) on 2026-07-31 after bench testing. Note the open
+// issue this was turned off to get away from: the module tracks 12 satellites
+// at 40 dB-Hz but has never solved a fix on this hardware. Until it does, the
+// telemetry packet still ships 0.0 for gps_lat/gps_lon — GPS being enabled is
+// not by itself evidence that the coordinates are live. Suspect the E220 first
+// (LORA_TX_ENABLED = 0 is the A/B), then sky view and antenna.
+#define GPS_ENABLED 1
 
 // GPS bring-up survey: re-enables GSV so the C/N0 of every visible satellite
 // can be read over SWD. Diagnostic only — set back to 0 for flight, it roughly
@@ -469,6 +471,10 @@ float sea_level_pressure2 = 1013.25f;
 
 // IMU data — module-scope so FlightSM_Update can see them
 static float ax = 0.0f, ay = 0.0f, az = 0.0f;
+// gx was function-local until the LoRa packet started carrying all three body
+// rates; the telemetry fill site sits outside the IMU sampling block, so it
+// has to live at module scope alongside gy/gz to be visible there.
+static float gx = 0.0f;
 static float gy = 0.0f;
 static float gz = 0.0f;
 
@@ -1051,7 +1057,7 @@ void App_Run(void) {
         ay = myMPU6050.acc_mps2[1]; // Pitch Axis Lateral
         az = myMPU6050.acc_mps2[2]; // Yaw Axis Lateral
 
-        float gx = myMPU6050.gyro[0]; // Roll Rate
+        gx = myMPU6050.gyro[0];       // Roll Rate — module-scope, LoRa reads it
         gy = myMPU6050.gyro[1];       // Pitch Rate — module-scope, FlightSM reads it
         gz = myMPU6050.gyro[2];       // Yaw Rate
 
@@ -1255,9 +1261,11 @@ void App_Run(void) {
         myLora.packet.ax           = ax;
         myLora.packet.ay           = ay;
         myLora.packet.az           = az;
+        myLora.packet.gx           = gx;
         myLora.packet.gy           = gy;
+        myLora.packet.gz           = gz;
         myLora.packet.pitch        = rocket_pitch;
-        myLora.packet.baro_alt_raw = (alt1 + alt2) * 0.5f; // simple pre-fusion peek
+        myLora.packet.roll         = rocket_roll;
         myLora.packet.baro_alt     = rocket_altitude;
         myLora.packet.gps_lat      = myGPS.latitude_deg;
         myLora.packet.gps_lon      = myGPS.longitude_deg;
@@ -1355,6 +1363,16 @@ void App_Run(void) {
         DBG_PRINT("Baro fault_count=%d\r\n", avionics_health.fault_count);
 
         DBG_PRINT("Alt: %.1f m  State: %d  Pitch: %.1f deg\r\n",rocket_altitude, FlightSM_GetState(), rocket_pitch);
+        // Which Tablo 5 events have latched, in the order they are meant to
+        // fire. The state enum alone cannot show this: GAA is a vote rather
+        // than a state, and every event from GAA to SPE happens inside state 3.
+        // On a bench run this is the line that tells you whether a step was
+        // actually detected or merely passed through.
+        DBG_PRINT("Events: KTE=%d YSD=%d IEA=%d GAA=%d ATE=%d SPE=%d BIT=%d APE=%d\r\n",
+                  flight_events.liftoff,   flight_events.burn_time,
+                  flight_events.min_altitude, flight_events.body_angle,
+                  flight_events.descent,   flight_events.drogue_cmd,
+                  flight_events.alt_threshold, flight_events.main_cmd);
         if (lorast != 0) {
             // 1=AUX busy  3=UART timeout  4=UART err  5=no AUX pulse(baud mismatch?)  6=AUX stuck
             DBG_PRINT("LoRa TX failed: code=%d\r\n", lorast);

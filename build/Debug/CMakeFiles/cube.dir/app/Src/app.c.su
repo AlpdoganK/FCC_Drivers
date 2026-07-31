@@ -1,4 +1,4 @@
 /home/alp/FCC_Drivers/app/Src/app.c:9:13:I2C_BusRecover	48	static
-/home/alp/FCC_Drivers/app/Src/app.c:475:6:App_Init	80	static
-/home/alp/FCC_Drivers/app/Src/app.c:734:6:App_Run	88	static
-/home/alp/FCC_Drivers/app/Src/app.c:1377:6:HAL_UART_RxCpltCallback	16	static
+/home/alp/FCC_Drivers/app/Src/app.c:481:6:App_Init	80	static
+/home/alp/FCC_Drivers/app/Src/app.c:740:6:App_Run	80	static
+/home/alp/FCC_Drivers/app/Src/app.c:1395:6:HAL_UART_RxCpltCallback	16	static

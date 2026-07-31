@@ -106,9 +106,12 @@ static uint8_t TryRead(UART_HandleTypeDef *huart, const uint8_t *cmd,
     return (*n_rx >= 11) ? 0 : 4;             // C1-framed but short
 }
 
-// Sends a 48-byte dummy packet (same length as TelemetryPacket, so the timing
-// is directly comparable to the flight path's aux_low_ms) and returns how long
-// AUX stayed low. *went_low is 0 if AUX never dropped at all.
+// Sends a 48-byte dummy packet and returns how long AUX stayed low. *went_low
+// is 0 if AUX never dropped at all. The 48 is a fixed test pattern, held here
+// deliberately so results stay comparable across runs — it tracked
+// sizeof(TelemetryPacket) when that was also 48, but the packet has since
+// grown to 56 B, so read aux_low_ms as ~15% optimistic against the flight path
+// rather than directly equal to it.
 //
 // The transmit is interrupt-driven and AUX is sampled across a fixed window
 // that opens BEFORE it starts. Waiting for the AUX edges in sequence after a
