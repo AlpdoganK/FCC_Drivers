@@ -64,6 +64,13 @@ extern volatile uint16_t ukb_sut_data_len;
 extern volatile uint32_t ukb_sut_rx_count;
 extern volatile uint32_t ukb_sut_cks_errors;
 
+// USART6 receive-error diagnostics (see HAL_UART_ErrorCallback in rs232.c).
+// In DMA mode the HAL aborts reception on ANY error flag; these count the
+// hits and the re-arms that followed. Read over SWD after a test run.
+extern volatile uint32_t ukb_rx_errors;     // every FE/NE/ORE/PE on USART6
+extern volatile uint32_t ukb_rx_last_error; // HAL_UART_ERROR_* mask of the latest
+extern volatile uint32_t ukb_rx_restarts;   // times reception was re-armed
+
 void UKB_RS232_Init(void);
 Test_Status UKB_RS232_GetMode(void);
 uint8_t UKB_Checksum(const uint8_t *buf, uint16_t n);

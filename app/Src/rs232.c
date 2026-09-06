@@ -266,41 +266,98 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 }
 
 /* A UART error (overrun, framing, noise) aborts DMA reception and would
- * otherwise leave the board permanently deaf to commands. Restart it. */
+ * otherwise leave the board permanently deaf to commands. Restart it.
+ *
+ * READ THE HAL BEFORE TOUCHING THIS. stm32f4xx_hal_uart.c,
+ * HAL_UART_IRQHandler, under "If Overrun error occurs, or if any error
+ * occurs in DMA mode reception, consider error as blocking": with DMAR set,
+ * EVERY error flag - FE, NE and ORE alike, not just overrun - makes the HAL
+ * call UART_EndRxTransfer (RxState -> READY, EIE/IDLEIE off, DMAR off) and
+ * abort the DMA stream. We are then called from the abort-complete callback
+ * with reception already dead. Nothing restarts it unless we do it here.
+ *
+ * An earlier version of this function did nothing but clear ErrorCode, on
+ * the belief that DMA-mode errors were non-blocking. Measured 2026-09-07:
+ * a SUT run latched KTE and then froze - the board kept streaming its 10 Hz
+ * status word for the remaining 20 s of the profile while seeing none of
+ * it, ignored the STOP that followed and ten more STOPs after that, and
+ * only a power cycle brought it back. That is precisely one noise/framing
+ * hit at 115200 through a MAX3232, which is running near its rated 120 kbps,
+ * turning into a failed algorithm test.
+ *
+ * What this does, in order:
+ *  1. Drain what the DMA had already written before it was aborted. NDTR
+ *     still holds the remaining count after an abort, so the write index is
+ *     RX_BUF_LEN - NDTR. Those bytes are real and the assembler keeps its
+ *     partial-frame state, so a frame straddling the error survives intact.
+ *  2. Re-arm HAL_UARTEx_ReceiveToIdle_DMA from the top of rx_buf and reset
+ *     the read cursor to match. UART_Start_Receive_DMA clears the sticky
+ *     flags (SR read then DR read) before enabling DMAR, so it cannot
+ *     immediately re-trip on the same event.
+ *
+ * Two things this must NOT do, both learned the hard way on the bench:
+ *
+ *  - Do not touch DR ourselves. The DMA is the only thing that should be
+ *    draining DR; a CPU read steals a byte out of the stream. The HAL's
+ *    restart path does the one dummy read that is needed, at the one
+ *    moment it is safe (reception is stopped).
+ *
+ *  - Do not restart while RxState is still BUSY_RX, and never judge that
+ *    with HAL_UART_GetState() - it returns gState | RxState, so during any
+ *    blocking transmit it reads as "not BUSY_RX", and restarting a HEALTHY
+ *    DMA rewinds the write pointer while rx_read_pos stays put. Measured: a
+ *    complete command sat at offset 23 in rx_buf while the cursor had been
+ *    reset to 0 and the write pointer to 2, so it could never be consumed.
+ *    Test huart->RxState directly; it is READY only after the HAL has
+ *    genuinely ended the transfer.
+ *
+ * Diagnostics, read over SWD after a run: ukb_rx_errors counts every hit,
+ * ukb_rx_last_error is the HAL_UART_ERROR_* mask of the latest one
+ * (0x01 PE, 0x02 NE, 0x04 FE, 0x08 ORE), ukb_rx_restarts how many times
+ * reception actually had to be re-armed. A steadily climbing error count
+ * with a clean-looking test means the line itself is marginal.
+ */
+volatile uint32_t ukb_rx_errors     = 0;
+volatile uint32_t ukb_rx_last_error = 0;
+volatile uint32_t ukb_rx_restarts   = 0;
+
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance != USART6) {
         return;
     }
 
-    /* Deliberately minimal. Two things this must NOT do, both learned the
-     * hard way on the bench:
-     *
-     *  - Do not read DR to clear the error flags. The DMA is the only thing
-     *    that should be draining DR; a CPU read steals a byte out of the
-     *    stream. Errors fire on the line transient at the start of a
-     *    transmission, so the stolen byte is typically the 0xAA header, and
-     *    a 5-byte command frame has no redundancy to survive that. Symptom:
-     *    a single command is ignored while the same command repeated
-     *    back-to-back works. The DMA clears the flags on its own as it
-     *    drains DR.
-     *
-     *  - Do not reset the frame assembler. A transient error mid-frame does
-     *    not mean the bytes already collected are wrong, and discarding them
-     *    loses commands. The footer and checksum checks reject genuinely
-     *    corrupt frames on their own.
-     */
-    huart->ErrorCode = HAL_UART_ERROR_NONE;
+    ukb_rx_errors++;
+    ukb_rx_last_error = huart->ErrorCode;
+    huart->ErrorCode  = HAL_UART_ERROR_NONE;
 
-    /*  - Do not restart the DMA here either. In DMA mode the HAL reports
-     *    FE/NE/ORE without stopping the transfer, so a restart is both
-     *    unnecessary and actively destructive: it rewinds the write pointer
-     *    to the start of the buffer and resets rx_read_pos, orphaning bytes
-     *    that had already been received. Measured on the bench - a complete
-     *    command sat at offset 23 in rx_buf while the cursor had been reset
-     *    to 0 and the write pointer to 2, so it could never be consumed.
-     *    The circular DMA runs indefinitely; leave it alone.
-     */
+    if (huart->RxState != HAL_UART_STATE_READY) {
+        /* Non-blocking path (never taken in DMA mode, kept for safety):
+         * reception is still running, so there is nothing to repair. */
+        return;
+    }
+
+    /* Reception is dead. Consume what arrived before the abort, from our
+     * cursor up to where the DMA stopped writing. */
+    if (huart->hdmarx != NULL) {
+        uint32_t remaining = __HAL_DMA_GET_COUNTER(huart->hdmarx);
+        uint16_t write_pos = (remaining >= RX_BUF_LEN)
+                             ? 0u : (uint16_t)(RX_BUF_LEN - remaining);
+        while (rx_read_pos != write_pos) {
+            UKB_FeedByte(rx_buf[rx_read_pos]);
+            rx_read_pos++;
+            if (rx_read_pos >= RX_BUF_LEN) {
+                rx_read_pos = 0u;
+            }
+        }
+    }
+
+    /* Re-arm from the top of the buffer; the cursor must follow it. The
+     * frame assembler is deliberately left alone - see above. */
+    rx_read_pos = 0u;
+    if (HAL_UARTEx_ReceiveToIdle_DMA(huart, rx_buf, RX_BUF_LEN) == HAL_OK) {
+        ukb_rx_restarts++;
+    }
 }
 
 /* ================================================================ */
